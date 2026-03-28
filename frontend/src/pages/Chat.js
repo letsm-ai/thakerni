@@ -72,20 +72,29 @@ const Chat = () => {
       const response = await chatApi.sendMessage(userMessage, activeConversation);
       const aiMessage = response.data;
 
-      // Update messages with AI response
-      setMessages(prev => [
-        ...prev.filter(m => m.message_id !== tempUserMsg.message_id),
-        { ...tempUserMsg, message_id: `user-${Date.now()}` },
-        aiMessage
-      ]);
+      // Store the user message properly with actual ID
+      const finalUserMsg = {
+        message_id: `user-${Date.now()}`,
+        conversation_id: aiMessage.conversation_id,
+        role: 'user',
+        content: userMessage,
+        created_at: new Date().toISOString()
+      };
 
-      // Update conversation list
+      // Update messages: remove temp, add final user msg and AI response
+      setMessages(prev => {
+        const filtered = prev.filter(m => m.message_id !== tempUserMsg.message_id);
+        return [...filtered, finalUserMsg, aiMessage];
+      });
+
+      // Update conversation list and set active conversation
       if (!activeConversation) {
         setActiveConversation(aiMessage.conversation_id);
       }
       loadConversations();
     } catch (error) {
       console.error('Error sending message:', error);
+      // Remove temp message on error
       setMessages(prev => prev.filter(m => m.message_id !== tempUserMsg.message_id));
     } finally {
       setSending(false);
@@ -252,7 +261,7 @@ const Chat = () => {
         </div>
 
         {/* Input Area */}
-        <div className="border-t border-slate-200 bg-white p-4">
+        <div className="border-t border-slate-200 bg-white p-4 relative z-50">
           <form onSubmit={handleSend} className="flex items-center gap-3">
             <input
               type="text"
@@ -266,7 +275,7 @@ const Chat = () => {
             <button
               type="submit"
               disabled={!input.trim() || sending}
-              className="bg-[#002FA7] text-white rounded-md p-2.5 hover:bg-[#001A7A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-[#002FA7] text-white rounded-md p-2.5 hover:bg-[#001A7A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative z-50"
               data-testid="send-message-button"
             >
               <PaperPlaneRight size={20} weight="bold" />

@@ -1,0 +1,93 @@
+# Letsm AI - Product Requirements Document
+
+## Original Problem Statement
+Build an AI assistant SaaS platform with:
+- AI-powered conversational assistant using OpenAI GPT-5.2
+- Task management assistance
+- Reminders & calendar events management
+- WhatsApp integration for messaging
+- JWT-based authentication (email/password) + Google OAuth social login
+- Professional and user-friendly design
+
+## Architecture
+
+### Tech Stack
+- **Frontend**: React 19 + Tailwind CSS + Shadcn UI
+- **Backend**: FastAPI (Python) + MongoDB
+- **AI**: OpenAI GPT-5.2 via Emergent Integrations
+- **Auth**: JWT + Emergent Google OAuth
+- **Design**: Swiss & High-Contrast archetype (Outfit + Manrope fonts)
+
+### API Endpoints
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login (JWT)
+- `POST /api/auth/session` - Google OAuth session exchange
+- `GET /api/auth/me` - Get current user
+- `POST /api/auth/logout` - Logout user
+- `POST /api/chat/message` - Send message to AI
+- `GET /api/chat/conversations` - List conversations
+- `GET /api/chat/conversations/{id}/messages` - Get conversation messages
+- `DELETE /api/chat/conversations/{id}` - Delete conversation
+- `POST /api/tasks` - Create task
+- `GET /api/tasks` - List tasks
+- `PUT /api/tasks/{id}` - Update task
+- `DELETE /api/tasks/{id}` - Delete task
+- `POST /api/reminders` - Create reminder
+- `GET /api/reminders` - List reminders
+- `DELETE /api/reminders/{id}` - Delete reminder
+- `POST /api/calendar/events` - Create event
+- `GET /api/calendar/events` - List events
+- `DELETE /api/calendar/events/{id}` - Delete event
+- `GET /api/whatsapp/status` - WhatsApp connection status
+- `GET /api/whatsapp/qr` - Get WhatsApp QR code
+
+## User Personas
+1. **Productivity User**: Uses AI chat for task planning, creates tasks and reminders
+2. **Business User**: Connects WhatsApp for customer communication
+3. **Personal User**: Uses calendar and reminders for scheduling
+
+## Core Requirements (Static)
+- [x] User authentication (JWT + Google OAuth)
+- [x] AI conversational assistant (GPT-5.2)
+- [x] Task management (CRUD)
+- [x] Reminders management (CRUD)
+- [x] Calendar events (CRUD)
+- [x] WhatsApp integration placeholder
+- [x] User profile management
+- [x] Responsive sidebar navigation
+
+## What's Been Implemented (2026-03-28)
+- ✅ Complete backend API with FastAPI
+- ✅ MongoDB integration for all data
+- ✅ JWT authentication with bcrypt password hashing
+- ✅ Google OAuth via Emergent Auth
+- ✅ AI Chat with OpenAI GPT-5.2
+- ✅ Tasks CRUD with priority and due dates
+- ✅ Reminders CRUD with repeat options
+- ✅ Calendar events CRUD
+- ✅ WhatsApp status/QR endpoints (Node.js service not deployed)
+- ✅ Professional Swiss-style UI design
+- ✅ All pages: Login, Dashboard, Chat, Tasks, Reminders, Calendar, WhatsApp, Profile
+
+## Prioritized Backlog
+
+### P0 (Critical)
+- None remaining for MVP
+
+### P1 (High Priority)
+- WhatsApp Node.js microservice deployment
+- Real-time notifications for reminders
+- Task due date notifications
+
+### P2 (Nice to Have)
+- AI-powered task suggestions
+- Voice input for AI chat
+- Dark mode theme
+- Export data (tasks, reminders)
+- Team collaboration features
+
+## Next Tasks
+1. Deploy WhatsApp Node.js service for full integration
+2. Add push notifications for reminders
+3. Implement task completion statistics
+4. Add AI conversation export feature

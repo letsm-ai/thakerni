@@ -108,3 +108,11 @@ input:focus, textarea:focus, button:focus {
         display: contents !important;
     }
 }
+
+/* Fix for Emergent badge overlay */
+[data-emergent-badge],
+.emergent-badge,
+[style*="position: fixed"][style*="bottom"] {
+    pointer-events: none !important;
+    z-index: 1 !important;
+}

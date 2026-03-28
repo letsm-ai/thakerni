@@ -388,23 +388,31 @@ async def send_chat_message(message: ChatMessageCreate, user: dict = Depends(get
         {"_id": 0}
     ).sort("created_at", 1).to_list(50)
     
-    # Initialize AI chat
-    chat = LlmChat(
-        api_key=EMERGENT_LLM_KEY,
-        session_id=conversation_id,
-        system_message="""You are Letsm AI, a helpful and professional AI assistant. You help users with:
+    try:
+        # Initialize AI chat
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=conversation_id,
+            system_message="""You are Letsm AI, a helpful and professional AI assistant. You help users with:
 - Task management and productivity
 - Scheduling and reminders
 - General questions and assistance
 - WhatsApp integration guidance
 
 Be concise, friendly, and helpful. Format your responses clearly."""
-    )
-    chat.with_model("openai", "gpt-5.2")
-    
-    # Send message and get response
-    user_message = UserMessage(text=message.message)
-    ai_response = await chat.send_message(user_message)
+        )
+        chat.with_model("openai", "gpt-5.2")
+        
+        # Send message and get response
+        user_message_obj = UserMessage(text=message.message)
+        ai_response = await chat.send_message(user_message_obj)
+    except Exception as e:
+        logger.error(f"AI chat error: {str(e)}")
+        # Check if budget exceeded
+        if "budget" in str(e).lower() or "exceeded" in str(e).lower():
+            ai_response = "I apologize, but the AI service is temporarily unavailable due to budget limits. Please try again later or contact support to top up the Universal Key balance (Profile -> Universal Key -> Add Balance)."
+        else:
+            ai_response = f"I encountered an issue processing your request. Please try again. Error: {str(e)[:100]}"
     
     # Store AI response
     ai_msg_id = f"msg_{uuid.uuid4().hex[:12]}"
