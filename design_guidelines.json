@@ -1,0 +1,109 @@
+{
+  "project_name": "Letsm AI",
+  "theme": "light",
+  "archetype": "4 (Swiss & High-Contrast)",
+  "design_philosophy": "Professional, minimalist, and objective. 95% of the UI is monochrome (Stark White, 10% Grey, Deep Slate). Color is reserved purely for functional guidance and primary actions. The layout uses strict grids and asymmetric weighting for visual interest without sacrificing density.",
+  "colors": {
+    "background": "#FFFFFF",
+    "surface": "#F9FAFB",
+    "surface_alt": "#F3F4F6",
+    "text_main": "#0F172A",
+    "text_muted": "#64748B",
+    "border": "#E2E8F0",
+    "border_hover": "#CBD5E1",
+    "primary": "#002FA7",
+    "primary_hover": "#001A7A",
+    "primary_text": "#FFFFFF",
+    "destructive": "#E11D48",
+    "warning": "#F59E0B",
+    "success": "#10B981"
+  },
+  "typography": {
+    "heading_font": "Outfit",
+    "body_font": "Manrope",
+    "rules": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tighter font-black text-slate-900",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight font-bold text-slate-900",
+      "h3": "text-xl sm:text-2xl tracking-tight font-semibold text-slate-900",
+      "h4": "text-lg sm:text-xl font-semibold text-slate-900",
+      "body": "text-base leading-relaxed text-slate-700",
+      "small_label": "text-xs font-bold uppercase tracking-[0.2em] text-slate-500",
+      "link": "text-sm font-medium text-slate-900 hover:text-[#002FA7] transition-colors"
+    }
+  },
+  "layout_and_spacing": {
+    "philosophy": "Generous Spacing Philosophy with 'Control Room' dense grids for functional areas.",
+    "container_padding": "p-6 md:p-12 lg:p-16",
+    "dashboard_grid": "grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6",
+    "card_padding": "p-6 or p-8",
+    "general_rules": [
+      "Containers with borders MUST have internal padding (p-6 or p-8).",
+      "Use strict left-alignment for paragraphs, inputs, and dense content.",
+      "Never center-align unless it's a specific empty state or specific hero headline."
+    ]
+  },
+  "components": {
+    "surfaces": {
+      "cards": "Flat background (bg-white or bg-slate-50), 1px subtle border (border-slate-200), NO shadow. rounded-lg.",
+      "cards_hover": "Hover state: -translate-y-1, shadow-lg, border-slate-300 transition-all duration-200",
+      "header": "Solid white background (bg-white), hard bottom border (border-b border-slate-200). NO glassmorphism.",
+      "sidebar": "bg-slate-50 border-r border-slate-200."
+    },
+    "buttons": {
+      "primary": "bg-[#002FA7] text-white rounded-md px-6 py-2.5 font-semibold tracking-wide hover:bg-[#001A7A] transition-colors shadow-sm",
+      "secondary": "bg-white text-slate-900 border border-slate-200 rounded-md px-6 py-2.5 font-medium hover:bg-slate-50 hover:border-slate-300 transition-colors",
+      "ghost": "bg-transparent text-slate-600 rounded-md px-4 py-2 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+    },
+    "inputs_and_forms": {
+      "style": "bg-white border border-slate-200 rounded-md px-4 py-2.5 text-slate-900 focus:border-[#002FA7] focus:ring-1 focus:ring-[#002FA7] outline-none transition-all",
+      "labels": "text-sm font-semibold text-slate-900 mb-1.5 block"
+    },
+    "ai_chat": {
+      "user_message": "bg-white border border-slate-200 rounded-lg p-4 max-w-[85%] ml-auto shadow-sm",
+      "ai_message": "bg-slate-50 border border-transparent rounded-lg p-4 max-w-[90%] mr-auto",
+      "input_area": "border-t border-slate-200 bg-white p-4 sticky bottom-0"
+    }
+  },
+  "animations": {
+    "hover": "transition-all duration-200 ease-in-out",
+    "list_stagger": "Framer motion: initial opacity-0 y-4, animate to opacity-100 y-0, stagger children by 0.05s",
+    "micro_interactions": "Active states scale down slightly (scale: 0.98)"
+  },
+  "icons": {
+    "library": "@phosphor-icons/react",
+    "weight": "regular or duotone (for selected states)",
+    "installation": "yarn add @phosphor-icons/react"
+  },
+  "testing": {
+    "rules": "All interactive and key informational elements MUST include a data-testid attribute. Use kebab-case, role-based naming (e.g., data-testid='add-task-button')."
+  },
+  "media": {
+    "logo": {
+      "url": "https://static.prod-images.emergentagent.com/jobs/9d301dcd-e3e4-482d-9d3a-1c2d6b41093f/images/7432755b702d2a2a26f7a6ef3b6c0c1c2e834acae24098a23273963d9cd5719c.png",
+      "description": "Letsm AI geometric modern logo.",
+      "usage": "Top left of the sidebar/header and on the login screen."
+    },
+    "login_background": {
+      "url": "https://static.prod-images.emergentagent.com/jobs/9d301dcd-e3e4-482d-9d3a-1c2d6b41093f/images/dd0db0f9b8f8070012fd71ed7d86b5bf320357e1ab28149f982806de691b7953.png",
+      "description": "Abstract Swiss brutalist background pattern with grid lines.",
+      "usage": "Background for the right/left split pane on the Authentication (Login/Register) screen."
+    },
+    "user_avatar_placeholder": {
+      "url": "https://images.pexels.com/photos/5906433/pexels-photo-5906433.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Professional headshot of a smiling man.",
+      "usage": "User profile avatar placeholder in the sidebar and profile settings."
+    }
+  },
+  "instructions_to_main_agent": [
+    "1. Setup Tailwind config to use Outfit for 'sans' or 'heading' and Manrope for 'body'.",
+    "2. DO NOT use generic fonts like Inter or Roboto.",
+    "3. Use Shadcn components for complex interactions (Dropdowns, Tabs, Dialogs) but heavily customize their classes to match the 'surfaces' and 'buttons' rules above.",
+    "4. Strip all default rounded-md and shadows from Shadcn cards and replace them with the flat, 1px border style specified in surfaces.",
+    "5. For the AI Chat, avoid cartoonish bubbles. Use structured, left/right aligned blocks with clear typography hierarchy.",
+    "6. Include data-testid on every clickable element and form input.",
+    "7. Implement responsive sidebars (hidden on mobile, hamburger menu).",
+    "8. Use the specified media URLs directly. Do not use placehold.it or similar services.",
+    "9. Use lucide-react or @phosphor-icons/react for icons.",
+    "10. Ensure the primary CTA color (#002FA7) is ONLY used for main actions, keeping the rest of the UI monochrome to draw attention effectively."
+  ]
+}
