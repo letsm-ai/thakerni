@@ -22,6 +22,15 @@ import SubscriptionSuccess from "./pages/SubscriptionSuccess";
 // Components
 import DashboardLayout from "./components/DashboardLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminLayout from "./components/AdminLayout";
+
+// Admin Pages
+import AdminOverview from "./pages/admin/AdminOverview";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminBilling from "./pages/admin/AdminBilling";
+import AdminSystem from "./pages/admin/AdminSystem";
+import AdminAudit from "./pages/admin/AdminAudit";
 
 // Router component to handle session_id detection
 const AppRouter = () => {
@@ -121,6 +130,23 @@ const AppRouter = () => {
           </ProtectedRoute>
         }
       />
+
+      {/* Admin Routes */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <AdminLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<AdminOverview />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="analytics" element={<AdminAnalytics />} />
+        <Route path="billing" element={<AdminBilling />} />
+        <Route path="system" element={<AdminSystem />} />
+        <Route path="audit" element={<AdminAudit />} />
+      </Route>
 
       {/* Default redirect */}
       <Route path="*" element={<Navigate to="/" replace />} />

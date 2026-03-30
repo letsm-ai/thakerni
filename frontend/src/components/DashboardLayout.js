@@ -16,7 +16,8 @@ import {
   ChartBar,
   Translate,
   Moon,
-  Sun
+  Sun,
+  GearSix
 } from '@phosphor-icons/react';
 import { Sheet, SheetContent, SheetTrigger } from '../components/ui/sheet';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
@@ -278,6 +279,19 @@ const Sidebar = ({ onItemClick }) => {
             </Link>
           );
         })}
+
+        {/* Admin Panel link — visible only for admin roles */}
+        {['admin', 'developer', 'operations', 'viewer'].includes(user?.role) && (
+          <Link
+            to="/admin"
+            onClick={onItemClick}
+            className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-violet-600 hover:bg-violet-50 border border-dashed border-violet-200 mt-3"
+            data-testid="nav-admin-panel"
+          >
+            <GearSix size={20} />
+            <span className="font-medium text-sm">{t('adminPanel') || 'Admin Panel'}</span>
+          </Link>
+        )}
       </nav>
 
       {/* User Section */}

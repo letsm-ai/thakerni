@@ -116,4 +116,21 @@ export const emailApi = {
   getSchedule: () => api.get('/email/digest-schedule'),
 };
 
+// Admin API
+export const adminApi = {
+  getOverview: () => api.get('/admin/overview'),
+  getUsers: (params) => api.get('/admin/users', { params }),
+  getUser: (id) => api.get(`/admin/users/${id}`),
+  updateUserRole: (id, role) => api.put(`/admin/users/${id}/role`, { role }),
+  updateUserStatus: (id, suspended) => api.put(`/admin/users/${id}/status`, { suspended }),
+  getSignupTrends: (days = 30) => api.get('/admin/analytics/signups', { params: { days } }),
+  getActivityTrends: (days = 30) => api.get('/admin/analytics/activity', { params: { days } }),
+  getCountryStats: () => api.get('/admin/analytics/countries'),
+  getPayments: (params) => api.get('/admin/billing/payments', { params }),
+  getRevenueChart: (days = 30) => api.get('/admin/billing/revenue', { params: { days } }),
+  getSystemHealth: () => api.get('/admin/system/health'),
+  getAuditLogs: (params) => api.get('/admin/audit-logs', { params }),
+  getRoles: () => api.get('/admin/roles'),
+};
+
 export default api;

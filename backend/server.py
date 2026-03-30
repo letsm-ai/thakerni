@@ -20,6 +20,7 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+from routes.admin import admin_router
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -99,6 +100,7 @@ class UserResponse(BaseModel):
     name: str
     picture: Optional[str] = None
     created_at: datetime
+    role: Optional[str] = "user"
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -210,6 +212,26 @@ def decode_jwt_token(token: str) -> dict:
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+
+async def capture_geo(request: Request, user_id: str):
+    """Capture user's country/city from IP using a free geolocation API."""
+    try:
+        ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "").split(",")[0].strip()
+        if not ip or ip in ("127.0.0.1", "::1", "localhost"):
+            return
+        async with httpx.AsyncClient() as client:
+            r = await client.get(f"http://ip-api.com/json/{ip}?fields=country,countryCode,city,region,timezone", timeout=3.0)
+            if r.status_code == 200:
+                geo = r.json()
+                if geo.get("country"):
+                    await db.users.update_one({"user_id": user_id}, {"$set": {
+                        "geo": geo,
+                        "last_login_ip": ip,
+                        "last_login_at": datetime.now(timezone.utc).isoformat()
+                    }})
+    except Exception as e:
+        logger.debug(f"Geo lookup failed: {e}")
+
 async def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
     # Check cookie first
     session_token = request.cookies.get("session_token")
@@ -240,7 +262,7 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
 # ==================== AUTH ROUTES ====================
 
 @api_router.post("/auth/register", response_model=TokenResponse)
-async def register(user_data: UserCreate):
+async def register(user_data: UserCreate, request: Request):
     # Check if user exists
     existing = await db.users.find_one({"email": user_data.email}, {"_id": 0})
     if existing:
@@ -260,6 +282,10 @@ async def register(user_data: UserCreate):
     
     await db.users.insert_one(user_doc)
     
+    # Capture geo location from IP
+    import asyncio
+    asyncio.create_task(capture_geo(request, user_id))
+    
     token = create_jwt_token(user_id, user_data.email)
     
     return TokenResponse(
@@ -274,13 +300,17 @@ async def register(user_data: UserCreate):
     )
 
 @api_router.post("/auth/login", response_model=TokenResponse)
-async def login(credentials: UserLogin):
+async def login(credentials: UserLogin, request: Request):
     user = await db.users.find_one({"email": credentials.email}, {"_id": 0})
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     if not verify_password(credentials.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Capture geo + last login
+    import asyncio
+    asyncio.create_task(capture_geo(request, user["user_id"]))
     
     token = create_jwt_token(user["user_id"], user["email"])
     
@@ -295,7 +325,8 @@ async def login(credentials: UserLogin):
             email=user["email"],
             name=user["name"],
             picture=user.get("picture"),
-            created_at=created_at
+            created_at=created_at,
+            role=user.get("role", "user")
         )
     )
 
@@ -373,7 +404,8 @@ async def exchange_session(request: Request, response: Response):
         "email": user["email"],
         "name": user["name"],
         "picture": user.get("picture"),
-        "created_at": created_at.isoformat()
+        "created_at": created_at.isoformat(),
+        "role": user.get("role", "user")
     }
 
 @api_router.get("/auth/me", response_model=UserResponse)
@@ -387,7 +419,8 @@ async def get_me(user: dict = Depends(get_current_user)):
         email=user["email"],
         name=user["name"],
         picture=user.get("picture"),
-        created_at=created_at
+        created_at=created_at,
+        role=user.get("role", "user")
     )
 
 @api_router.post("/auth/logout")
@@ -1970,6 +2003,7 @@ async def disconnect_whatsapp(user: dict = Depends(get_current_user)):
 
 # Include router and middleware
 app.include_router(api_router)
+app.include_router(admin_router)
 
 app.add_middleware(
     CORSMiddleware,
