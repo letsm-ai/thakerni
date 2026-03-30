@@ -56,12 +56,15 @@ Build an AI assistant SaaS platform with:
 - [x] User profile management
 - [x] Responsive sidebar navigation
 
-## What's Been Implemented (2026-03-28)
+## What's Been Implemented (2026-03-30)
 - ✅ Complete backend API with FastAPI
 - ✅ MongoDB integration for all data
 - ✅ JWT authentication with bcrypt password hashing
 - ✅ Google OAuth via Emergent Auth
 - ✅ AI Chat with OpenAI GPT-5.2
+- ✅ **AI-powered task/reminder creation from natural language** (NEW!)
+  - Say "Create task: call dentist tomorrow" → automatically creates task
+  - Say "Remind me to pick up package at 3pm" → automatically creates reminder
 - ✅ Tasks CRUD with priority and due dates
 - ✅ Reminders CRUD with repeat options
 - ✅ Calendar events CRUD

@@ -5,6 +5,8 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import re
+import json
 from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional
@@ -351,6 +353,125 @@ async def logout(request: Request, response: Response):
 
 # ==================== AI CHAT ROUTES ====================
 
+async def parse_and_create_from_ai(user_message: str, user: dict, ai_response: str) -> Optional[str]:
+    """Parse AI response for task/reminder creation commands and execute them"""
+    action_taken = None
+    
+    # Check if the message contains task/reminder intent
+    lower_msg = user_message.lower()
+    
+    task_keywords = ['create task', 'add task', 'new task', 'make a task', 'todo:', 'task:']
+    reminder_keywords = ['remind me', 'set reminder', 'create reminder', 'add reminder', 'reminder:']
+    
+    has_task_intent = any(kw in lower_msg for kw in task_keywords)
+    has_reminder_intent = any(kw in lower_msg for kw in reminder_keywords)
+    
+    if has_task_intent:
+        # Extract task title from message
+        title = user_message
+        for kw in task_keywords:
+            if kw in lower_msg:
+                idx = lower_msg.find(kw) + len(kw)
+                title = user_message[idx:].strip()
+                if title.startswith(':'):
+                    title = title[1:].strip()
+                break
+        
+        if title and len(title) > 2:
+            # Determine priority from message
+            priority = "medium"
+            if any(w in lower_msg for w in ['urgent', 'important', 'asap', 'critical', 'high priority']):
+                priority = "high"
+            elif any(w in lower_msg for w in ['low priority', 'whenever', 'someday']):
+                priority = "low"
+            
+            # Parse due date hints
+            due_date = None
+            now = datetime.now(timezone.utc)
+            if 'tomorrow' in lower_msg:
+                due_date = (now + timedelta(days=1)).replace(hour=9, minute=0, second=0)
+            elif 'today' in lower_msg:
+                due_date = now.replace(hour=18, minute=0, second=0)
+            elif 'next week' in lower_msg:
+                due_date = (now + timedelta(days=7)).replace(hour=9, minute=0, second=0)
+            
+            # Create task
+            task_id = f"task_{uuid.uuid4().hex[:12]}"
+            task_doc = {
+                "task_id": task_id,
+                "user_id": user["user_id"],
+                "title": title[:100],
+                "description": f"Created from chat: {user_message[:200]}",
+                "due_date": due_date.isoformat() if due_date else None,
+                "priority": priority,
+                "completed": False,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.tasks.insert_one(task_doc)
+            action_taken = f"\n\n✅ **Task created**: \"{title[:50]}\" (Priority: {priority})"
+            if due_date:
+                action_taken += f" - Due: {due_date.strftime('%b %d, %Y')}"
+    
+    elif has_reminder_intent:
+        # Extract reminder title
+        title = user_message
+        for kw in reminder_keywords:
+            if kw in lower_msg:
+                idx = lower_msg.find(kw) + len(kw)
+                title = user_message[idx:].strip()
+                if title.startswith('to '):
+                    title = title[3:].strip()
+                break
+        
+        if title and len(title) > 2:
+            # Parse time from message
+            reminder_time = datetime.now(timezone.utc) + timedelta(hours=1)  # Default: 1 hour
+            
+            # Time pattern matching
+            time_match = re.search(r'at (\d{1,2})(?::(\d{2}))?\s*(am|pm)?', lower_msg, re.IGNORECASE)
+            if time_match:
+                hour = int(time_match.group(1))
+                minute = int(time_match.group(2) or 0)
+                ampm = time_match.group(3)
+                if ampm and ampm.lower() == 'pm' and hour < 12:
+                    hour += 12
+                elif ampm and ampm.lower() == 'am' and hour == 12:
+                    hour = 0
+                reminder_time = reminder_time.replace(hour=hour, minute=minute, second=0)
+            
+            # Date parsing
+            if 'tomorrow' in lower_msg:
+                reminder_time = reminder_time + timedelta(days=1)
+            elif 'next week' in lower_msg:
+                reminder_time = reminder_time + timedelta(days=7)
+            
+            # Time keywords
+            if 'morning' in lower_msg:
+                reminder_time = reminder_time.replace(hour=9, minute=0)
+            elif 'afternoon' in lower_msg:
+                reminder_time = reminder_time.replace(hour=14, minute=0)
+            elif 'evening' in lower_msg:
+                reminder_time = reminder_time.replace(hour=18, minute=0)
+            elif 'night' in lower_msg:
+                reminder_time = reminder_time.replace(hour=21, minute=0)
+            
+            # Create reminder
+            reminder_id = f"rem_{uuid.uuid4().hex[:12]}"
+            reminder_doc = {
+                "reminder_id": reminder_id,
+                "user_id": user["user_id"],
+                "title": title[:100],
+                "description": f"Created from chat: {user_message[:200]}",
+                "reminder_time": reminder_time.isoformat(),
+                "repeat": "none",
+                "active": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.reminders.insert_one(reminder_doc)
+            action_taken = f"\n\n🔔 **Reminder set**: \"{title[:50]}\" - {reminder_time.strftime('%b %d, %Y at %I:%M %p')}"
+    
+    return action_taken
+
 @api_router.post("/chat/message", response_model=ChatMessageResponse)
 async def send_chat_message(message: ChatMessageCreate, user: dict = Depends(get_current_user)):
     conversation_id = message.conversation_id or f"conv_{uuid.uuid4().hex[:12]}"
@@ -399,6 +520,14 @@ async def send_chat_message(message: ChatMessageCreate, user: dict = Depends(get
 - General questions and assistance
 - WhatsApp integration guidance
 
+IMPORTANT: When users ask you to create tasks or set reminders, acknowledge their request naturally. The system will automatically create the task/reminder for them.
+
+Examples of what users might say:
+- "Remind me to call John tomorrow at 3pm" 
+- "Create task: buy groceries"
+- "Add task to finish the report by Friday"
+- "Set a reminder for the meeting at 10am"
+
 Be concise, friendly, and helpful. Format your responses clearly."""
         )
         chat.with_model("openai", "gpt-5.2")
@@ -406,6 +535,12 @@ Be concise, friendly, and helpful. Format your responses clearly."""
         # Send message and get response
         user_message_obj = UserMessage(text=message.message)
         ai_response = await chat.send_message(user_message_obj)
+        
+        # Check for task/reminder creation from natural language
+        action_result = await parse_and_create_from_ai(message.message, user, ai_response)
+        if action_result:
+            ai_response += action_result
+            
     except Exception as e:
         logger.error(f"AI chat error: {str(e)}")
         # Check if budget exceeded
