@@ -80,11 +80,16 @@ Build an AI assistant SaaS platform with:
   - QR code authentication
   - Commands: create task, list tasks, complete task, set reminder
   - Ready to deploy at /app/whatsapp-service
-- ✅ **Voice Input** (NEW!)
+- ✅ **Voice Input** 
   - Microphone button in chat input area
   - Web Speech API integration (Chrome, Edge, Safari supported)
   - Real-time speech-to-text transcription
   - Voice commands: "Create task...", "Show my tasks", "Remind me..."
+- ✅ **Statistics Dashboard** (NEW!)
+  - Productivity overview: Tasks completed, pending, AI conversations, reminders
+  - Current streak tracking (consecutive days with completed tasks)
+  - Weekly activity chart (bar graph)
+  - Quick stats panel with productivity score
 - ✅ Tasks CRUD with priority and due dates
 - ✅ Reminders CRUD with repeat options
 - ✅ Calendar events CRUD

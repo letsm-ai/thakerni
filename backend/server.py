@@ -973,22 +973,6 @@ async def delete_calendar_event(event_id: str, user: dict = Depends(get_current_
         raise HTTPException(status_code=404, detail="Event not found")
     return {"message": "Event deleted"}
 
-# ==================== WHATSAPP ROUTES (PLACEHOLDER) ====================
-
-@api_router.get("/whatsapp/status")
-async def get_whatsapp_status(user: dict = Depends(get_current_user)):
-    """Get WhatsApp connection status"""
-    connection = await db.whatsapp_connections.find_one(
-        {"user_id": user["user_id"]},
-        {"_id": 0}
-    )
-    return {"connected": connection is not None and connection.get("connected", False)}
-
-@api_router.get("/whatsapp/qr")
-async def get_whatsapp_qr(user: dict = Depends(get_current_user)):
-    """Get QR code for WhatsApp connection - placeholder"""
-    return {"qr": None, "message": "WhatsApp integration requires Node.js service setup"}
-
 # ==================== USER PROFILE ====================
 
 @api_router.put("/users/profile")
@@ -1181,6 +1165,224 @@ async def root():
 @api_router.get("/health")
 async def health():
     return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
+
+# ==================== STATISTICS ====================
+
+@api_router.get("/stats/overview")
+async def get_stats_overview(user: dict = Depends(get_current_user)):
+    """Get user productivity statistics overview"""
+    user_id = user["user_id"]
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = today_start - timedelta(days=today_start.weekday())
+    month_start = today_start.replace(day=1)
+    
+    # Task statistics
+    total_tasks = await db.tasks.count_documents({"user_id": user_id})
+    completed_tasks = await db.tasks.count_documents({"user_id": user_id, "completed": True})
+    pending_tasks = await db.tasks.count_documents({"user_id": user_id, "completed": False})
+    
+    # Tasks completed this week
+    tasks_completed_this_week = await db.tasks.count_documents({
+        "user_id": user_id,
+        "completed": True,
+        "completed_at": {"$gte": week_start.isoformat()}
+    })
+    
+    # High priority pending tasks
+    high_priority_pending = await db.tasks.count_documents({
+        "user_id": user_id,
+        "completed": False,
+        "priority": "high"
+    })
+    
+    # Reminder statistics
+    total_reminders = await db.reminders.count_documents({"user_id": user_id})
+    active_reminders = await db.reminders.count_documents({"user_id": user_id, "active": True})
+    
+    # Conversation statistics
+    total_conversations = await db.conversations.count_documents({"user_id": user_id})
+    total_messages = await db.messages.count_documents({"user_id": user_id})
+    
+    # Messages this week
+    messages_this_week = await db.messages.count_documents({
+        "user_id": user_id,
+        "created_at": {"$gte": week_start.isoformat()}
+    })
+    
+    # Calendar events
+    total_events = await db.calendar_events.count_documents({"user_id": user_id})
+    upcoming_events = await db.calendar_events.count_documents({
+        "user_id": user_id,
+        "start_time": {"$gte": now.isoformat()}
+    })
+    
+    # Completion rate
+    completion_rate = round((completed_tasks / total_tasks * 100) if total_tasks > 0 else 0, 1)
+    
+    return {
+        "tasks": {
+            "total": total_tasks,
+            "completed": completed_tasks,
+            "pending": pending_tasks,
+            "completed_this_week": tasks_completed_this_week,
+            "high_priority_pending": high_priority_pending,
+            "completion_rate": completion_rate
+        },
+        "reminders": {
+            "total": total_reminders,
+            "active": active_reminders
+        },
+        "conversations": {
+            "total": total_conversations,
+            "total_messages": total_messages,
+            "messages_this_week": messages_this_week
+        },
+        "calendar": {
+            "total_events": total_events,
+            "upcoming_events": upcoming_events
+        }
+    }
+
+@api_router.get("/stats/activity")
+async def get_activity_stats(user: dict = Depends(get_current_user), days: int = 7):
+    """Get daily activity for the past N days"""
+    user_id = user["user_id"]
+    now = datetime.now(timezone.utc)
+    
+    daily_stats = []
+    
+    for i in range(days - 1, -1, -1):
+        day_start = (now - timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + timedelta(days=1)
+        
+        # Tasks created/completed on this day
+        tasks_created = await db.tasks.count_documents({
+            "user_id": user_id,
+            "created_at": {"$gte": day_start.isoformat(), "$lt": day_end.isoformat()}
+        })
+        
+        tasks_completed = await db.tasks.count_documents({
+            "user_id": user_id,
+            "completed_at": {"$gte": day_start.isoformat(), "$lt": day_end.isoformat()}
+        })
+        
+        # Messages sent
+        messages_sent = await db.messages.count_documents({
+            "user_id": user_id,
+            "role": "user",
+            "created_at": {"$gte": day_start.isoformat(), "$lt": day_end.isoformat()}
+        })
+        
+        # Reminders set
+        reminders_set = await db.reminders.count_documents({
+            "user_id": user_id,
+            "created_at": {"$gte": day_start.isoformat(), "$lt": day_end.isoformat()}
+        })
+        
+        daily_stats.append({
+            "date": day_start.strftime("%Y-%m-%d"),
+            "day_name": day_start.strftime("%a"),
+            "tasks_created": tasks_created,
+            "tasks_completed": tasks_completed,
+            "messages_sent": messages_sent,
+            "reminders_set": reminders_set
+        })
+    
+    return {"daily_activity": daily_stats}
+
+@api_router.get("/stats/streaks")
+async def get_streaks(user: dict = Depends(get_current_user)):
+    """Get productivity streaks"""
+    user_id = user["user_id"]
+    now = datetime.now(timezone.utc)
+    
+    # Calculate current streak (consecutive days with at least one completed task)
+    current_streak = 0
+    max_streak = 0
+    temp_streak = 0
+    
+    for i in range(30):  # Check last 30 days
+        day_start = (now - timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + timedelta(days=1)
+        
+        completed_on_day = await db.tasks.count_documents({
+            "user_id": user_id,
+            "completed_at": {"$gte": day_start.isoformat(), "$lt": day_end.isoformat()}
+        })
+        
+        if completed_on_day > 0:
+            temp_streak += 1
+            if i == 0 or (i > 0 and current_streak == temp_streak - 1):
+                current_streak = temp_streak
+        else:
+            if temp_streak > max_streak:
+                max_streak = temp_streak
+            if i == 0:
+                current_streak = 0
+            temp_streak = 0
+    
+    if temp_streak > max_streak:
+        max_streak = temp_streak
+    
+    return {
+        "current_streak": current_streak,
+        "max_streak": max(max_streak, current_streak),
+        "streak_unit": "days"
+    }
+
+# ==================== WHATSAPP PROXY ====================
+
+WHATSAPP_SERVICE_URL = "http://localhost:3001"
+
+@api_router.get("/whatsapp/status")
+async def get_whatsapp_status(user: dict = Depends(get_current_user)):
+    """Get WhatsApp connection status from Node.js service"""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{WHATSAPP_SERVICE_URL}/status", timeout=5.0)
+            return response.json()
+    except Exception as e:
+        logger.error(f"WhatsApp service error: {str(e)}")
+        return {"connected": False, "error": "WhatsApp service unavailable"}
+
+@api_router.get("/whatsapp/qr")
+async def get_whatsapp_qr(user: dict = Depends(get_current_user)):
+    """Get QR code for WhatsApp connection"""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{WHATSAPP_SERVICE_URL}/qr", timeout=5.0)
+            return response.json()
+    except Exception as e:
+        logger.error(f"WhatsApp QR error: {str(e)}")
+        return {"qr": None, "message": "WhatsApp service unavailable. Please try again."}
+
+@api_router.post("/whatsapp/send")
+async def send_whatsapp_message(request: Request, user: dict = Depends(get_current_user)):
+    """Send a WhatsApp message"""
+    body = await request.json()
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{WHATSAPP_SERVICE_URL}/send",
+                json=body,
+                timeout=10.0
+            )
+            return response.json()
+    except Exception as e:
+        logger.error(f"WhatsApp send error: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+@api_router.post("/whatsapp/disconnect")
+async def disconnect_whatsapp(user: dict = Depends(get_current_user)):
+    """Disconnect WhatsApp session"""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(f"{WHATSAPP_SERVICE_URL}/disconnect", timeout=5.0)
+            return response.json()
+    except Exception as e:
+        logger.error(f"WhatsApp disconnect error: {str(e)}")
+        return {"success": False, "error": str(e)}
 
 # Include router and middleware
 app.include_router(api_router)

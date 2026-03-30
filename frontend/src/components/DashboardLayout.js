@@ -11,7 +11,8 @@ import {
   User,
   SignOut,
   List,
-  X
+  X,
+  ChartBar
 } from '@phosphor-icons/react';
 import { Sheet, SheetContent, SheetTrigger } from '../components/ui/sheet';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
@@ -21,6 +22,7 @@ const navItems = [
   { path: '/dashboard/tasks', icon: CheckSquare, label: 'Tasks' },
   { path: '/dashboard/reminders', icon: Bell, label: 'Reminders' },
   { path: '/dashboard/calendar', icon: Calendar, label: 'Calendar' },
+  { path: '/dashboard/statistics', icon: ChartBar, label: 'Statistics' },
   { path: '/dashboard/whatsapp', icon: WhatsappLogo, label: 'WhatsApp' },
   { path: '/dashboard/profile', icon: User, label: 'Profile' },
 ];

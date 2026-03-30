@@ -74,6 +74,13 @@ export const notificationsApi = {
   checkReminders: () => api.get('/notifications/check-reminders'),
 };
 
+// Statistics API
+export const statsApi = {
+  getOverview: () => api.get('/stats/overview'),
+  getActivity: (days = 7) => api.get(`/stats/activity?days=${days}`),
+  getStreaks: () => api.get('/stats/streaks'),
+};
+
 // User API
 export const userApi = {
   updateProfile: (data) => api.put('/users/profile', data),

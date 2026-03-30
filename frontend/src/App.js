@@ -13,6 +13,7 @@ import Reminders from "./pages/Reminders";
 import CalendarPage from "./pages/CalendarPage";
 import WhatsApp from "./pages/WhatsApp";
 import Profile from "./pages/Profile";
+import Statistics from "./pages/Statistics";
 
 // Components
 import DashboardLayout from "./components/DashboardLayout";
@@ -90,6 +91,16 @@ const AppRouter = () => {
           <ProtectedRoute>
             <DashboardLayout>
               <Profile />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/statistics"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <Statistics />
             </DashboardLayout>
           </ProtectedRoute>
         }
