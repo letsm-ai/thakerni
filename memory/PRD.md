@@ -21,7 +21,7 @@ Build an AI assistant SaaS platform with:
 - **AI**: OpenAI GPT-5.2 via Emergent Integrations
 - **Auth**: JWT + Emergent Google OAuth
 - **Payments**: Stripe via Emergent Integrations (StripeCheckout)
-- **WhatsApp**: Baileys v7 Node.js microservice
+- **WhatsApp**: Baileys v7 Node.js microservice → FastAPI AI endpoint
 - **Design**: Swiss & High-Contrast archetype (Outfit + Manrope fonts)
 
 ### Key API Endpoints
@@ -30,6 +30,8 @@ Build an AI assistant SaaS platform with:
 - Tasks: `/api/tasks` (CRUD)
 - Reminders: `/api/reminders` (CRUD)
 - Calendar: `/api/calendar/events` (CRUD)
+- Guest Chat: `/api/guest/chat` (no auth, rate limited)
+- WhatsApp AI: `/api/whatsapp/ai` (no auth, internal for Node.js service)
 - Subscriptions: `/api/subscription/plans`, `/api/subscription/status`, `/api/subscription/checkout`, `/api/subscription/checkout/status/{session_id}`, `/api/webhook/stripe`
 - WhatsApp: `/api/whatsapp/status`, `/api/whatsapp/qr`, `/api/whatsapp/connect`, `/api/whatsapp/disconnect`
 - Stats: `/api/stats/overview`, `/api/stats/activity`, `/api/stats/streaks`
@@ -41,12 +43,9 @@ Build an AI assistant SaaS platform with:
 - JWT authentication with bcrypt + Google OAuth
 - AI Chat with GPT-5.2 via Emergent LLM Key
 - AI-powered task/reminder creation from natural language
-- Push notification system
-- Voice input (Web Speech API)
-- Statistics dashboard
-- Full Arabic/RTL support
-- Basic landing page
-- WhatsApp Node.js microservice (basic)
+- Push notification system, Voice input (Web Speech API)
+- Statistics dashboard, Full Arabic/RTL support
+- Basic landing page, WhatsApp Node.js microservice (basic)
 
 ### Session 2
 - Fixed WhatsApp QR Code (Baileys v7 + fetchLatestBaileysVersion)
@@ -55,27 +54,21 @@ Build an AI assistant SaaS platform with:
 - SubscriptionSuccess page with payment status polling
 
 ### Session 3
-- **Complete Landing Page Overhaul** (ported from reference design):
-  - Interactive Chat Demo with 3 clickable scenarios (animated conversations)
-  - Integrations showcase (WhatsApp, Telegram, Web Chat, Slack + 4 calendar platforms)
-  - Testimonials section (6 user reviews with 5-star ratings)
-  - Privacy & Security section (6 feature cards + commitment box + safety guidelines)
-  - FAQ accordion (4 questions under pricing)
-  - Enhanced Features section (6 feature cards with hover effects)
-  - Improved navigation with anchor links (Features/Demo/Pricing/Privacy)
-  - Full Arabic translation for ALL new sections
+- Complete Landing Page Overhaul: Chat Demo, Integrations, Testimonials, Privacy, FAQ, Features
+- Full Arabic translation for ALL landing page sections
+
+### Session 4
+- **Floating AI Chat Widget**: Landing page visitors can chat with GPT-5.2 without signing up. Rate limited (10 msgs/5 min per IP). Shows sign-up CTA after 3 messages. Supports Arabic.
+- **WhatsApp 2-Way AI Chat**: Incoming WhatsApp messages forwarded to GPT-5.2 via `/api/whatsapp/ai` endpoint. AI responses sent back to the user via WhatsApp. Conversations logged to `whatsapp_messages` MongoDB collection. Full Arabic support.
 
 ## Prioritized Backlog
-
-### P1 (High Priority)
-- Complete WhatsApp 2-way chat forwarding to AI backend
-- Add real-time notifications for reminders
 
 ### P2 (Nice to Have)
 - Add demo video to landing page "Watch Demo" button
 - Weekly email digest for productivity stats
 - Dark mode theme
 - Export data (tasks, reminders)
+- Real-time notifications for reminders
 
 ## Refactoring Needed
-- `server.py` is ~1,600 lines — split into modular FastAPI routers
+- `server.py` is ~1,700 lines — split into modular FastAPI routers
