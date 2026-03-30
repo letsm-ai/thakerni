@@ -16,7 +16,7 @@ Build an AI assistant SaaS platform with:
 ## Architecture
 
 ### Tech Stack
-- **Frontend**: React 19 + Tailwind CSS + Shadcn UI
+- **Frontend**: React 19 + Tailwind CSS + Shadcn UI + Framer Motion
 - **Backend**: FastAPI (Python) + MongoDB
 - **AI**: OpenAI GPT-5.2 via Emergent Integrations
 - **Auth**: JWT + Emergent Google OAuth
@@ -24,42 +24,19 @@ Build an AI assistant SaaS platform with:
 - **WhatsApp**: Baileys v7 Node.js microservice
 - **Design**: Swiss & High-Contrast archetype (Outfit + Manrope fonts)
 
-### API Endpoints
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login (JWT)
-- `POST /api/auth/session` - Google OAuth session exchange
-- `GET /api/auth/me` - Get current user
-- `POST /api/auth/logout` - Logout user
-- `POST /api/chat/message` - Send message to AI
-- `GET /api/chat/conversations` - List conversations
-- `GET /api/chat/conversations/{id}/messages` - Get conversation messages
-- `DELETE /api/chat/conversations/{id}` - Delete conversation
-- `POST /api/tasks` - Create task
-- `GET /api/tasks` - List tasks
-- `PUT /api/tasks/{id}` - Update task
-- `DELETE /api/tasks/{id}` - Delete task
-- `POST /api/reminders` - Create reminder
-- `GET /api/reminders` - List reminders
-- `DELETE /api/reminders/{id}` - Delete reminder
-- `POST /api/calendar/events` - Create event
-- `GET /api/calendar/events` - List events
-- `DELETE /api/calendar/events/{id}` - Delete event
-- `GET /api/subscription/plans` - List subscription plans
-- `GET /api/subscription/status` - Get user subscription status
-- `POST /api/subscription/checkout` - Create Stripe checkout session
-- `GET /api/subscription/checkout/status/{session_id}` - Poll payment status
-- `POST /api/webhook/stripe` - Stripe webhook handler
-- `GET /api/whatsapp/status` - WhatsApp connection status
-- `GET /api/whatsapp/qr` - Get WhatsApp QR code
-- `POST /api/whatsapp/connect` - Trigger new WhatsApp QR generation
-- `POST /api/whatsapp/disconnect` - Disconnect WhatsApp
-- `GET /api/stats/overview` - Productivity stats
-- `GET /api/stats/activity` - Activity chart data
-- `GET /api/stats/streaks` - Streak data
+### Key API Endpoints
+- Auth: `/api/auth/register`, `/api/auth/login`, `/api/auth/session`, `/api/auth/me`
+- Chat: `/api/chat/message`, `/api/chat/conversations`
+- Tasks: `/api/tasks` (CRUD)
+- Reminders: `/api/reminders` (CRUD)
+- Calendar: `/api/calendar/events` (CRUD)
+- Subscriptions: `/api/subscription/plans`, `/api/subscription/status`, `/api/subscription/checkout`, `/api/subscription/checkout/status/{session_id}`, `/api/webhook/stripe`
+- WhatsApp: `/api/whatsapp/status`, `/api/whatsapp/qr`, `/api/whatsapp/connect`, `/api/whatsapp/disconnect`
+- Stats: `/api/stats/overview`, `/api/stats/activity`, `/api/stats/streaks`
 
 ## What's Been Implemented
 
-### Session 1 (2026-03-30)
+### Session 1
 - Complete backend API with FastAPI + MongoDB
 - JWT authentication with bcrypt + Google OAuth
 - AI Chat with GPT-5.2 via Emergent LLM Key
@@ -68,14 +45,25 @@ Build an AI assistant SaaS platform with:
 - Voice input (Web Speech API)
 - Statistics dashboard
 - Full Arabic/RTL support
-- Professional landing page with pricing
+- Basic landing page
 - WhatsApp Node.js microservice (basic)
 
-### Session 2 (2026-03-30)
-- **Fixed WhatsApp QR Code**: Updated Baileys to v7, used `fetchLatestBaileysVersion()`, added `/connect` endpoint for on-demand QR regeneration, frontend auto-polls every 3s
-- **Stripe Subscription Billing**: Implemented full checkout flow using Emergent StripeCheckout - plans API, checkout session creation (server-side pricing), payment status polling, webhook handler, `payment_transactions` collection
-- **Profile Subscription UI**: Added subscription section showing current plan, upgrade buttons for Pro/Business that redirect to Stripe checkout
-- **SubscriptionSuccess Page**: Payment status polling page at `/dashboard/subscription/success`
+### Session 2
+- Fixed WhatsApp QR Code (Baileys v7 + fetchLatestBaileysVersion)
+- Stripe Subscription Billing (checkout sessions, payment polling, webhooks)
+- Profile Subscription UI (upgrade buttons → Stripe checkout)
+- SubscriptionSuccess page with payment status polling
+
+### Session 3
+- **Complete Landing Page Overhaul** (ported from reference design):
+  - Interactive Chat Demo with 3 clickable scenarios (animated conversations)
+  - Integrations showcase (WhatsApp, Telegram, Web Chat, Slack + 4 calendar platforms)
+  - Testimonials section (6 user reviews with 5-star ratings)
+  - Privacy & Security section (6 feature cards + commitment box + safety guidelines)
+  - FAQ accordion (4 questions under pricing)
+  - Enhanced Features section (6 feature cards with hover effects)
+  - Improved navigation with anchor links (Features/Demo/Pricing/Privacy)
+  - Full Arabic translation for ALL new sections
 
 ## Prioritized Backlog
 
@@ -85,10 +73,9 @@ Build an AI assistant SaaS platform with:
 
 ### P2 (Nice to Have)
 - Add demo video to landing page "Watch Demo" button
-- Add testimonials section to landing page
 - Weekly email digest for productivity stats
 - Dark mode theme
 - Export data (tasks, reminders)
 
 ## Refactoring Needed
-- `server.py` is ~1,600 lines - split into modular FastAPI routers (auth, tasks, ai, whatsapp, billing)
+- `server.py` is ~1,600 lines — split into modular FastAPI routers
