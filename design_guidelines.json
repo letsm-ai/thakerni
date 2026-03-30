@@ -1,109 +1,132 @@
 {
-  "project_name": "Letsm AI",
   "theme": "light",
-  "archetype": "4 (Swiss & High-Contrast)",
-  "design_philosophy": "Professional, minimalist, and objective. 95% of the UI is monochrome (Stark White, 10% Grey, Deep Slate). Color is reserved purely for functional guidance and primary actions. The layout uses strict grids and asymmetric weighting for visual interest without sacrificing density.",
+  "archetype": "3 (Pastel & Soft) & Swiss Clean",
+  "design_philosophy": "Ultra-clean, minimal, airy. Lots of whitespace. Flat design with soft borders, absolutely no drop shadows on cards. Generous internal padding and large rounded corners.",
   "colors": {
-    "background": "#FFFFFF",
-    "surface": "#F9FAFB",
-    "surface_alt": "#F3F4F6",
-    "text_main": "#0F172A",
-    "text_muted": "#64748B",
-    "border": "#E2E8F0",
-    "border_hover": "#CBD5E1",
-    "primary": "#002FA7",
-    "primary_hover": "#001A7A",
-    "primary_text": "#FFFFFF",
-    "destructive": "#E11D48",
-    "warning": "#F59E0B",
-    "success": "#10B981"
+    "primary": {
+      "base": "#7c3aed",
+      "hover": "#6d28d9",
+      "gradient": "bg-gradient-to-r from-violet-600 to-indigo-500",
+      "text_gradient": "bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-indigo-500"
+    },
+    "background": {
+      "main": "#ffffff",
+      "secondary": "#f8f9ff",
+      "tertiary": "#f8fafc",
+      "amber_box": "#fffbeb",
+      "amber_border": "#fde68a"
+    },
+    "text": {
+      "heading": "#111827",
+      "body": "#6b7280",
+      "inverse": "#ffffff"
+    },
+    "border": {
+      "default": "#e5e7eb",
+      "subtle": "#f3f4f6"
+    },
+    "accents": {
+      "pink": "bg-pink-50 text-pink-600",
+      "blue": "bg-blue-50 text-blue-600",
+      "purple": "bg-violet-50 text-violet-600",
+      "green": "bg-emerald-50 text-emerald-600"
+    }
   },
   "typography": {
-    "heading_font": "Outfit",
-    "body_font": "Manrope",
-    "rules": {
-      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tighter font-black text-slate-900",
-      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight font-bold text-slate-900",
-      "h3": "text-xl sm:text-2xl tracking-tight font-semibold text-slate-900",
-      "h4": "text-lg sm:text-xl font-semibold text-slate-900",
-      "body": "text-base leading-relaxed text-slate-700",
-      "small_label": "text-xs font-bold uppercase tracking-[0.2em] text-slate-500",
-      "link": "text-sm font-medium text-slate-900 hover:text-[#002FA7] transition-colors"
-    }
+    "font_family_headings": "Outfit, sans-serif",
+    "font_family_body": "Inter, sans-serif",
+    "h1": "text-5xl md:text-7xl font-bold tracking-tight leading-[1.1]",
+    "h2": "text-4xl md:text-5xl font-bold tracking-tight mb-4",
+    "h3": "text-2xl font-semibold mb-3",
+    "body": "text-lg text-gray-500 leading-relaxed",
+    "small": "text-sm text-gray-400"
   },
-  "layout_and_spacing": {
-    "philosophy": "Generous Spacing Philosophy with 'Control Room' dense grids for functional areas.",
-    "container_padding": "p-6 md:p-12 lg:p-16",
-    "dashboard_grid": "grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6",
-    "card_padding": "p-6 or p-8",
-    "general_rules": [
-      "Containers with borders MUST have internal padding (p-6 or p-8).",
-      "Use strict left-alignment for paragraphs, inputs, and dense content.",
-      "Never center-align unless it's a specific empty state or specific hero headline."
-    ]
+  "spacing_and_layout": {
+    "section_padding": "py-24 md:py-32",
+    "card_padding": "p-8 md:p-12",
+    "grid_3_col": "grid grid-cols-1 md:grid-cols-3 gap-8",
+    "grid_2_col": "grid grid-cols-1 md:grid-cols-2 gap-8",
+    "rounded_corners": "rounded-3xl",
+    "container": "max-w-7xl mx-auto px-6 md:px-12"
   },
   "components": {
-    "surfaces": {
-      "cards": "Flat background (bg-white or bg-slate-50), 1px subtle border (border-slate-200), NO shadow. rounded-lg.",
-      "cards_hover": "Hover state: -translate-y-1, shadow-lg, border-slate-300 transition-all duration-200",
-      "header": "Solid white background (bg-white), hard bottom border (border-b border-slate-200). NO glassmorphism.",
-      "sidebar": "bg-slate-50 border-r border-slate-200."
+    "cards": "bg-white border border-gray-200 rounded-3xl p-8 md:p-10 shadow-none hover:shadow-none transition-none",
+    "buttons": "bg-violet-600 text-white rounded-full px-8 py-3 font-medium hover:bg-violet-700 transition-colors inline-flex items-center justify-center",
+    "nav_links": "text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors",
+    "pills": "inline-flex items-center px-4 py-2 rounded-full text-sm font-medium border",
+    "chat_container": "bg-white border border-gray-200 rounded-3xl overflow-hidden",
+    "chat_header": "bg-gradient-to-r from-violet-600 to-indigo-500 p-4 text-white flex items-center",
+    "chat_bubble_ai": "bg-gray-100 rounded-2xl rounded-tl-sm p-4 text-gray-800 max-w-[80%]",
+    "chat_bubble_user": "bg-violet-600 rounded-2xl rounded-tr-sm p-4 text-white max-w-[80%] ml-auto",
+    "avatar_initials": "w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg"
+  },
+  "image_urls": {
+    "hero_mockup": {
+      "url": "https://static.prod-images.emergentagent.com/jobs/9d301dcd-e3e4-482d-9d3a-1c2d6b41093f/images/c20506ad820af18fca8db646421f81d14372424f9f9dfdbec4992513f7a1d9d2.png",
+      "description": "Hero section 3D interface mockup",
+      "category": "hero_visual"
     },
-    "buttons": {
-      "primary": "bg-[#002FA7] text-white rounded-md px-6 py-2.5 font-semibold tracking-wide hover:bg-[#001A7A] transition-colors shadow-sm",
-      "secondary": "bg-white text-slate-900 border border-slate-200 rounded-md px-6 py-2.5 font-medium hover:bg-slate-50 hover:border-slate-300 transition-colors",
-      "ghost": "bg-transparent text-slate-600 rounded-md px-4 py-2 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-    },
-    "inputs_and_forms": {
-      "style": "bg-white border border-slate-200 rounded-md px-4 py-2.5 text-slate-900 focus:border-[#002FA7] focus:ring-1 focus:ring-[#002FA7] outline-none transition-all",
-      "labels": "text-sm font-semibold text-slate-900 mb-1.5 block"
-    },
-    "ai_chat": {
-      "user_message": "bg-white border border-slate-200 rounded-lg p-4 max-w-[85%] ml-auto shadow-sm",
-      "ai_message": "bg-slate-50 border border-transparent rounded-lg p-4 max-w-[90%] mr-auto",
-      "input_area": "border-t border-slate-200 bg-white p-4 sticky bottom-0"
+    "privacy_illustration": {
+      "url": "https://static.prod-images.emergentagent.com/jobs/9d301dcd-e3e4-482d-9d3a-1c2d6b41093f/images/1a6effa70f08b0d092ef06acba1df41da507e959eb51219376efad3b1f340fe8.png",
+      "description": "Privacy section abstract 3D shield",
+      "category": "section_visual"
     }
   },
-  "animations": {
-    "hover": "transition-all duration-200 ease-in-out",
-    "list_stagger": "Framer motion: initial opacity-0 y-4, animate to opacity-100 y-0, stagger children by 0.05s",
-    "micro_interactions": "Active states scale down slightly (scale: 0.98)"
-  },
-  "icons": {
-    "library": "@phosphor-icons/react",
-    "weight": "regular or duotone (for selected states)",
-    "installation": "yarn add @phosphor-icons/react"
-  },
-  "testing": {
-    "rules": "All interactive and key informational elements MUST include a data-testid attribute. Use kebab-case, role-based naming (e.g., data-testid='add-task-button')."
-  },
-  "media": {
-    "logo": {
-      "url": "https://static.prod-images.emergentagent.com/jobs/9d301dcd-e3e4-482d-9d3a-1c2d6b41093f/images/7432755b702d2a2a26f7a6ef3b6c0c1c2e834acae24098a23273963d9cd5719c.png",
-      "description": "Letsm AI geometric modern logo.",
-      "usage": "Top left of the sidebar/header and on the login screen."
+  "sections_guide": [
+    {
+      "name": "Navigation",
+      "details": "Fixed top nav with glassmorphism (backdrop-blur-md bg-white/80). Minimal styling, centered links (Features, Demo, Pricing, Privacy), rounded 'Get Started' CTA. Logo is a purple circle with 'L' and text 'Letsm AI'."
     },
-    "login_background": {
-      "url": "https://static.prod-images.emergentagent.com/jobs/9d301dcd-e3e4-482d-9d3a-1c2d6b41093f/images/dd0db0f9b8f8070012fd71ed7d86b5bf320357e1ab28149f982806de691b7953.png",
-      "description": "Abstract Swiss brutalist background pattern with grid lines.",
-      "usage": "Background for the right/left split pane on the Authentication (Login/Register) screen."
+    {
+      "name": "Hero",
+      "details": "Massive top padding. H1: 'Your Life, Simplified' with 'Simplified' in violet-to-indigo text gradient. Subtitle in text-xl text-gray-500. Feature pills underneath in pastel colors (e.g., bg-purple-50, bg-blue-50) with subtle borders. Followed by a right-aligned or centered floating hero_mockup image."
     },
-    "user_avatar_placeholder": {
-      "url": "https://images.pexels.com/photos/5906433/pexels-photo-5906433.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
-      "description": "Professional headshot of a smiling man.",
-      "usage": "User profile avatar placeholder in the sidebar and profile settings."
+    {
+      "name": "Features",
+      "details": "Section title 'Powerful Features'. 3-column bento grid of flat cards. Each card has a soft colored circular icon, bold title, muted description. Zero box-shadows."
+    },
+    {
+      "name": "Advanced Features",
+      "details": "Section title 'Enhanced Intelligence'. Similar to Features, but some cards have soft gradient backgrounds or header accents."
+    },
+    {
+      "name": "Live Demo",
+      "details": "Full-width layout. Left side: chat interface mockup with purple gradient header, white background, showing message bubbles. Right side: stacked buttons/cards acting as scenario selectors."
+    },
+    {
+      "name": "Real Conversations",
+      "details": "2x2 bento grid. Each card acts as a mini chat mockup. Green action cards/labels for outcomes (e.g., 'Reminder set for 2:00 PM today')."
+    },
+    {
+      "name": "Integrations",
+      "details": "Two large cards side-by-side: Messaging and Calendar. Grid of platform items with icons inside. Use lucide-react or react-icons. Gray 'Soon' badges."
+    },
+    {
+      "name": "Testimonials",
+      "details": "Grid of quotes. Use avatar_initials component with CSS gradient backgrounds (e.g., bg-gradient-to-br from-pink-400 to-orange-400) for profile pictures. Apply a fading opacity mask at the edges of the grid."
+    },
+    {
+      "name": "Privacy",
+      "details": "Section title 'Your Privacy, Our Priority'. 2-column bento cards. 'Safety Guidelines' in an amber-tinted box (bg-amber-50 border-amber-200) with bullet points."
+    },
+    {
+      "name": "CTA / Stats",
+      "details": "Section 'Ready to Simplify Your Life?'. Large gradient text. A grid below showing stats: 50K+ Users, 2M+ Tasks, 99.9% Uptime with massive numbers and subtle text."
     }
+  ],
+  "accessibility_and_testing": {
+    "data_testid": "Must include data-testid on ALL interactive elements (buttons, links, inputs). Format: kebab-case, role-based.",
+    "focus_states": "Ensure buttons and links have distinct focus:ring states."
   },
   "instructions_to_main_agent": [
-    "1. Setup Tailwind config to use Outfit for 'sans' or 'heading' and Manrope for 'body'.",
-    "2. DO NOT use generic fonts like Inter or Roboto.",
-    "3. Use Shadcn components for complex interactions (Dropdowns, Tabs, Dialogs) but heavily customize their classes to match the 'surfaces' and 'buttons' rules above.",
-    "4. Strip all default rounded-md and shadows from Shadcn cards and replace them with the flat, 1px border style specified in surfaces.",
-    "5. For the AI Chat, avoid cartoonish bubbles. Use structured, left/right aligned blocks with clear typography hierarchy.",
-    "6. Include data-testid on every clickable element and form input.",
-    "7. Implement responsive sidebars (hidden on mobile, hamburger menu).",
-    "8. Use the specified media URLs directly. Do not use placehold.it or similar services.",
-    "9. Use lucide-react or @phosphor-icons/react for icons.",
-    "10. Ensure the primary CTA color (#002FA7) is ONLY used for main actions, keeping the rest of the UI monochrome to draw attention effectively."
+    "Build the application using React, Tailwind CSS, and Lucide React/React Icons.",
+    "STRICT RULE: Do NOT use drop shadows on cards (`shadow-sm`, `shadow-md`, etc.). The design must be entirely flat with 1px borders (`border border-gray-200`).",
+    "STRICT RULE: Generous padding is required. Sections must have `py-24` or `py-32`. Cards must have `p-8` to `p-12`. Do not cramp elements.",
+    "STRICT RULE: Large border radius. Use `rounded-3xl` for cards, `rounded-full` for buttons.",
+    "Testimonial avatars MUST use CSS gradients with initials, do not use external placeholder images.",
+    "Use the specific text, headings, and features extracted from the crawl (e.g., 'Your Life, Simplified', 'Enhanced Intelligence').",
+    "Use standard HTML semantic tags + Tailwind for layouts, and customize Shadcn (if used) to remove all shadows and increase border radii.",
+    "Only use the provided media URLs. Never use placeholders like via.placeholder.com.",
+    "Install `lucide-react` for icons."
   ]
 }
