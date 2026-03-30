@@ -7,7 +7,11 @@ Build an AI assistant SaaS platform with:
 - Reminders & calendar events management
 - WhatsApp integration for messaging
 - JWT-based authentication (email/password) + Google OAuth social login
-- Professional and user-friendly design
+- Voice input via Web Speech API
+- Productivity statistics dashboard
+- Full Arabic language & RTL layout support
+- Stripe subscription billing (Free/Pro/Business)
+- Professional landing page to sell subscriptions
 
 ## Architecture
 
@@ -16,6 +20,8 @@ Build an AI assistant SaaS platform with:
 - **Backend**: FastAPI (Python) + MongoDB
 - **AI**: OpenAI GPT-5.2 via Emergent Integrations
 - **Auth**: JWT + Emergent Google OAuth
+- **Payments**: Stripe via Emergent Integrations (StripeCheckout)
+- **WhatsApp**: Baileys v7 Node.js microservice
 - **Design**: Swiss & High-Contrast archetype (Outfit + Manrope fonts)
 
 ### API Endpoints
@@ -38,89 +44,51 @@ Build an AI assistant SaaS platform with:
 - `POST /api/calendar/events` - Create event
 - `GET /api/calendar/events` - List events
 - `DELETE /api/calendar/events/{id}` - Delete event
+- `GET /api/subscription/plans` - List subscription plans
+- `GET /api/subscription/status` - Get user subscription status
+- `POST /api/subscription/checkout` - Create Stripe checkout session
+- `GET /api/subscription/checkout/status/{session_id}` - Poll payment status
+- `POST /api/webhook/stripe` - Stripe webhook handler
 - `GET /api/whatsapp/status` - WhatsApp connection status
 - `GET /api/whatsapp/qr` - Get WhatsApp QR code
+- `POST /api/whatsapp/connect` - Trigger new WhatsApp QR generation
+- `POST /api/whatsapp/disconnect` - Disconnect WhatsApp
+- `GET /api/stats/overview` - Productivity stats
+- `GET /api/stats/activity` - Activity chart data
+- `GET /api/stats/streaks` - Streak data
 
-## User Personas
-1. **Productivity User**: Uses AI chat for task planning, creates tasks and reminders
-2. **Business User**: Connects WhatsApp for customer communication
-3. **Personal User**: Uses calendar and reminders for scheduling
+## What's Been Implemented
 
-## Core Requirements (Static)
-- [x] User authentication (JWT + Google OAuth)
-- [x] AI conversational assistant (GPT-5.2)
-- [x] Task management (CRUD)
-- [x] Reminders management (CRUD)
-- [x] Calendar events (CRUD)
-- [x] WhatsApp integration placeholder
-- [x] User profile management
-- [x] Responsive sidebar navigation
+### Session 1 (2026-03-30)
+- Complete backend API with FastAPI + MongoDB
+- JWT authentication with bcrypt + Google OAuth
+- AI Chat with GPT-5.2 via Emergent LLM Key
+- AI-powered task/reminder creation from natural language
+- Push notification system
+- Voice input (Web Speech API)
+- Statistics dashboard
+- Full Arabic/RTL support
+- Professional landing page with pricing
+- WhatsApp Node.js microservice (basic)
 
-## What's Been Implemented (2026-03-30)
-- ✅ Complete backend API with FastAPI
-- ✅ MongoDB integration for all data
-- ✅ JWT authentication with bcrypt password hashing
-- ✅ Google OAuth via Emergent Auth
-- ✅ AI Chat with OpenAI GPT-5.2
-- ✅ **AI-powered task/reminder creation from natural language**
-  - Say "Create task: call dentist tomorrow" → automatically creates task
-  - Say "Remind me to pick up package at 3pm" → automatically creates reminder
-- ✅ **AI task management via chat** (NEW!)
-  - "Show my tasks" → lists all pending tasks with priorities
-  - "Complete task 1" → marks task #1 as done
-  - "Show my reminders" → lists upcoming reminders
-  - "Cancel reminder 1" → deletes reminder #1
-- ✅ **Push Notifications System** (NEW!)
-  - Notification bell with unread count badge
-  - Auto-check for due reminders every minute
-  - Task due date notifications
-  - Mark as read, mark all read, delete notifications
-- ✅ **WhatsApp Node.js Microservice** (NEW!)
-  - Express server with Baileys WhatsApp library
-  - QR code authentication
-  - Commands: create task, list tasks, complete task, set reminder
-  - Ready to deploy at /app/whatsapp-service
-- ✅ **Voice Input** 
-  - Microphone button in chat input area
-  - Web Speech API integration (Chrome, Edge, Safari supported)
-  - Real-time speech-to-text transcription
-  - Voice commands: "Create task...", "Show my tasks", "Remind me..."
-- ✅ **Statistics Dashboard**
-  - Productivity overview: Tasks completed, pending, AI conversations, reminders
-  - Current streak tracking (consecutive days with completed tasks)
-  - Weekly activity chart (bar graph)
-  - Quick stats panel with productivity score
-- ✅ **Full RTL (Right-to-Left) Support** (NEW!)
-  - Complete Arabic language translations
-  - RTL layout for sidebar, navigation, and content
-  - Language toggle button (English/العربية)
-  - Arabic font (Noto Sans Arabic)
-  - Persisted language preference in localStorage
-- ✅ Tasks CRUD with priority and due dates
-- ✅ Reminders CRUD with repeat options
-- ✅ Calendar events CRUD
-- ✅ Professional Swiss-style UI design
-- ✅ All pages: Login, Dashboard, Chat, Tasks, Reminders, Calendar, WhatsApp, Profile
+### Session 2 (2026-03-30)
+- **Fixed WhatsApp QR Code**: Updated Baileys to v7, used `fetchLatestBaileysVersion()`, added `/connect` endpoint for on-demand QR regeneration, frontend auto-polls every 3s
+- **Stripe Subscription Billing**: Implemented full checkout flow using Emergent StripeCheckout - plans API, checkout session creation (server-side pricing), payment status polling, webhook handler, `payment_transactions` collection
+- **Profile Subscription UI**: Added subscription section showing current plan, upgrade buttons for Pro/Business that redirect to Stripe checkout
+- **SubscriptionSuccess Page**: Payment status polling page at `/dashboard/subscription/success`
 
 ## Prioritized Backlog
 
-### P0 (Critical)
-- None remaining for MVP
-
 ### P1 (High Priority)
-- WhatsApp Node.js microservice deployment
-- Real-time notifications for reminders
-- Task due date notifications
+- Complete WhatsApp 2-way chat forwarding to AI backend
+- Add real-time notifications for reminders
 
 ### P2 (Nice to Have)
-- AI-powered task suggestions
-- ~~Voice input for AI chat~~ ✅ DONE
+- Add demo video to landing page "Watch Demo" button
+- Add testimonials section to landing page
+- Weekly email digest for productivity stats
 - Dark mode theme
 - Export data (tasks, reminders)
-- Team collaboration features
 
-## Next Tasks
-1. Deploy WhatsApp Node.js service (run `cd /app/whatsapp-service && yarn start`)
-2. Add browser push notifications (Web Push API)
-3. Implement task completion statistics
-4. Add AI conversation export feature
+## Refactoring Needed
+- `server.py` is ~1,600 lines - split into modular FastAPI routers (auth, tasks, ai, whatsapp, billing)
