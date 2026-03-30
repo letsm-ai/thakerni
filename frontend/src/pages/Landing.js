@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import FloatingChat from '../components/FloatingChat';
 import { 
   ArrowRight,
   Play,
@@ -622,6 +623,9 @@ const Landing = () => {
           </div>
         </div>
       </footer>
+
+      {/* Floating AI Chat Widget */}
+      <FloatingChat language={language} isRTL={isRTL} />
     </div>
   );
 };

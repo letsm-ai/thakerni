@@ -2,6 +2,7 @@ const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBailey
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
+const axios = require('axios');
 
 const app = express();
 app.use(cors());
@@ -110,49 +111,42 @@ async function handleIncomingMessage(message) {
         const messageText = message.message.conversation ||
                            message.message.extendedTextMessage?.text || '';
         console.log(`Received from ${phoneNumber}: ${messageText}`);
-        const response = processTaskCommand(phoneNumber, messageText);
-        if (response) {
-            await sendMessage(phoneNumber, response);
+
+        if (!messageText.trim()) return;
+
+        // Check for basic help command first
+        const text = messageText.toLowerCase().trim();
+        if (text === 'help' || text === '?' || text === 'commands') {
+            const helpText = `*Letsm AI WhatsApp Bot*\n\nSend me any message and I'll help you with tasks, reminders, scheduling, and more!\n\n*Examples:*\n- Remind me to call Ahmed at 3pm\n- Create a task to review budget\n- What should I do today?\n- Help me plan my week\n\nI understand English and Arabic!`;
+            await sendMessage(phoneNumber, helpText);
+            return;
+        }
+
+        // Forward to AI backend
+        try {
+            const response = await axios.post(`${FASTAPI_URL}/api/whatsapp/ai`, {
+                phone_number: phoneNumber,
+                message: messageText
+            }, { timeout: 30000 });
+
+            if (response.data && response.data.response) {
+                await sendMessage(phoneNumber, response.data.response);
+            } else {
+                await sendMessage(phoneNumber, "I'm processing your request. Please try again in a moment.");
+            }
+        } catch (aiError) {
+            console.error('AI backend error:', aiError.message);
+            // Fallback to basic response
+            await sendMessage(phoneNumber, "I'm having trouble connecting to the AI service right now. Send *help* to see available commands.");
         }
     } catch (error) {
         console.error('Error handling incoming message:', error);
     }
 }
 
-function processTaskCommand(phoneNumber, messageText) {
-    const text = messageText.toLowerCase().trim();
-
-    if (text === 'help' || text === '?' || text === 'commands') {
-        return `*Letsm AI WhatsApp Bot*\n\n*Task Commands:*\n- create task: [description]\n- list tasks\n- complete task [number]\n\n*Reminder Commands:*\n- remind me [description]\n- list reminders\n\nSend help to see this menu`;
-    }
-
-    if (text.startsWith('create task:') || text.startsWith('add task:') || text.startsWith('task:')) {
-        const taskDesc = messageText.split(':').slice(1).join(':').trim();
-        if (taskDesc) return `Task created: *${taskDesc}*\n\nOpen Letsm AI app to manage tasks.`;
-        return 'Please provide a task description.\nExample: create task: buy groceries';
-    }
-
-    if (text === 'list tasks' || text === 'show tasks' || text === 'my tasks') {
-        return `*Your Tasks*\n\nOpen the Letsm AI app to view and manage all tasks.`;
-    }
-
-    if (text.startsWith('complete task') || text.startsWith('done task')) {
-        const taskNum = text.match(/\d+/);
-        if (taskNum) return `Task #${taskNum[0]} marked as complete!`;
-        return 'Please specify task number.\nExample: complete task 1';
-    }
-
-    if (text.startsWith('remind me')) {
-        const reminderText = messageText.substring(9).trim();
-        if (reminderText) return `Reminder set: *${reminderText}*\n\nManage reminders in Letsm AI app.`;
-        return 'Please provide reminder details.\nExample: remind me to call John at 3pm';
-    }
-
-    if (text === 'list reminders' || text === 'show reminders' || text === 'my reminders') {
-        return `*Your Reminders*\n\nOpen Letsm AI app to view and manage reminders.`;
-    }
-
-    return `Hi! I'm Letsm AI assistant.\n\nSend *help* to see available commands.`;
+// Keep help command for offline fallback
+function getHelpText() {
+    return `*Letsm AI WhatsApp Bot*\n\nSend me any message and I'll help you!\n\nSend *help* to see this menu.`;
 }
 
 async function sendMessage(phoneNumber, text) {

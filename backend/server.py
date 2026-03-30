@@ -1563,6 +1563,112 @@ async def stripe_webhook(request: Request):
         logger.error(f"Webhook error: {str(e)}")
         return {"received": True, "error": str(e)}
 
+# ==================== GUEST CHAT (No Auth) ====================
+
+# Simple in-memory rate limiting for guest chat
+guest_rate_limits = {}
+
+class GuestChatRequest(BaseModel):
+    message: str
+    session_id: Optional[str] = None
+
+@api_router.post("/guest/chat")
+async def guest_chat(request: Request, body: GuestChatRequest):
+    """AI chat endpoint for landing page visitors (no auth required, rate limited)"""
+    # Get client IP for rate limiting
+    client_ip = request.client.host if request.client else "unknown"
+    now = datetime.now(timezone.utc)
+
+    # Rate limit: 10 messages per 5 minutes per IP
+    if client_ip in guest_rate_limits:
+        entries = [t for t in guest_rate_limits[client_ip] if (now - t).total_seconds() < 300]
+        guest_rate_limits[client_ip] = entries
+        if len(entries) >= 10:
+            return {"response": "You've reached the message limit. Please sign up for unlimited conversations!", "limited": True}
+    else:
+        guest_rate_limits[client_ip] = []
+
+    guest_rate_limits[client_ip].append(now)
+
+    session_id = body.session_id or f"guest_{uuid.uuid4().hex[:8]}"
+
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=session_id,
+            system_message="""You are Letsm AI, a helpful AI assistant on the landing page. You are chatting with a potential customer who hasn't signed up yet.
+
+Be friendly, helpful, and demonstrate your capabilities. Show them how you can:
+- Create tasks and reminders from natural language
+- Help with scheduling and productivity
+- Understand context and preferences
+- Support Arabic and English
+
+Keep responses concise (2-3 sentences). Encourage them to sign up for the full experience.
+
+IMPORTANT: If the user writes in Arabic, respond in Arabic. Match their language.
+أنت مساعد ذكي يدعم اللغة العربية. إذا كتب المستخدم بالعربية، أجب بالعربية."""
+        )
+        chat.with_model("openai", "gpt-5.2")
+        user_message = UserMessage(text=body.message)
+        ai_response = await chat.send_message(user_message)
+
+        return {
+            "response": ai_response,
+            "session_id": session_id,
+            "limited": False
+        }
+    except Exception as e:
+        logger.error(f"Guest chat error: {str(e)}")
+        if "budget" in str(e).lower() or "exceeded" in str(e).lower():
+            return {"response": "The AI service is temporarily at capacity. Please sign up and try again!", "limited": True}
+        return {"response": "I'd love to chat! Please sign up to start your AI-powered productivity journey.", "limited": True}
+
+# ==================== WHATSAPP AI ENDPOINT (for Node.js service) ====================
+
+class WhatsAppAIRequest(BaseModel):
+    phone_number: str
+    message: str
+
+@api_router.post("/whatsapp/ai")
+async def whatsapp_ai_process(body: WhatsAppAIRequest):
+    """Process incoming WhatsApp message with AI and return response (called by Node.js service)"""
+    session_id = f"wa_{body.phone_number}"
+
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=session_id,
+            system_message="""You are Letsm AI, a WhatsApp-based AI assistant. Users are chatting with you via WhatsApp.
+
+You help with:
+- Task management (create, list, complete tasks)
+- Reminders (set and manage)
+- General questions and productivity tips
+- Scheduling assistance
+
+Keep responses short and WhatsApp-friendly (use *bold* for emphasis, avoid long paragraphs).
+If the user writes in Arabic, respond in Arabic. Match their language.
+
+أنت مساعد ذكي عبر واتساب. إذا كتب المستخدم بالعربية، أجب بالعربية."""
+        )
+        chat.with_model("openai", "gpt-5.2")
+        user_message = UserMessage(text=body.message)
+        ai_response = await chat.send_message(user_message)
+
+        # Log the WhatsApp conversation
+        await db.whatsapp_messages.insert_one({
+            "phone_number": body.phone_number,
+            "user_message": body.message,
+            "ai_response": ai_response,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+
+        return {"response": ai_response, "success": True}
+    except Exception as e:
+        logger.error(f"WhatsApp AI error: {str(e)}")
+        return {"response": "I'm having trouble right now. Please try again in a moment.", "success": False}
+
 # ==================== WHATSAPP PROXY ====================
 
 WHATSAPP_SERVICE_URL = "http://localhost:3001"
