@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import FloatingChat from '../components/FloatingChat';
@@ -13,7 +13,7 @@ import { motion } from 'framer-motion';
 
 const Landing = () => {
   const { language, toggleLanguage, isRTL } = useLanguage();
-  const t = (en, ar) => language === 'ar' ? ar : en;
+  const t = useCallback((en, ar) => language === 'ar' ? ar : en, [language]);
 
   // ── Feature pills for hero ──
   const heroPills = [
@@ -87,6 +87,9 @@ const Landing = () => {
   ]);
   const [isTyping, setIsTyping] = useState(false);
   const [activeScenario, setActiveScenario] = useState(null);
+  const [demoInput, setDemoInput] = useState('');
+  const [demoSessionId, setDemoSessionId] = useState(null);
+  const demoChatRef = useRef(null);
 
   const demoScenarios = [
     { label: t('Set a Reminder', 'تعيين تذكير'), icon: Clock, user: t('Remind me to send the report after lunch', 'ذكرني بإرسال التقرير بعد الغداء'), ai: t('Sure! Would 2pm work for you?', 'بالتأكيد! هل الساعة 2 ظهراً مناسبة؟'), follow: t('Yes', 'نعم'), final: t("Done! I'll remind you at 2pm today.", 'تم! سأذكرك الساعة 2 ظهراً اليوم.'), action: t('Reminder set for 2:00 PM', 'تم تعيين التذكير للساعة 2:00 مساءً') },
@@ -109,6 +112,28 @@ const Landing = () => {
       }, 1200);
     }, 500);
   };
+
+  const sendDemoMessage = useCallback(async () => {
+    const text = demoInput.trim();
+    if (!text || isTyping) return;
+    setDemoInput('');
+    setDemoMessages(p => [...p, { id: Date.now(), type: 'user', content: text }]);
+    setIsTyping(true);
+    try {
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/guest/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, session_id: demoSessionId })
+      });
+      const data = await res.json();
+      if (data.session_id) setDemoSessionId(data.session_id);
+      setDemoMessages(p => [...p, { id: Date.now() + 1, type: 'ai', content: data.response || data.message }]);
+    } catch {
+      setDemoMessages(p => [...p, { id: Date.now() + 1, type: 'ai', content: t('Sorry, something went wrong. Sign up for the full experience!', 'عذراً، حدث خطأ. سجّل للحصول على تجربة كاملة!') }]);
+    } finally {
+      setIsTyping(false);
+    }
+  }, [demoInput, isTyping, demoSessionId, t]);
 
   // ── Testimonials ──
   const testimonials = [
@@ -146,6 +171,10 @@ const Landing = () => {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    if (demoChatRef.current) demoChatRef.current.scrollTop = demoChatRef.current.scrollHeight;
+  }, [demoMessages, isTyping]);
 
   const scrollToTop = useCallback(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -322,7 +351,7 @@ const Landing = () => {
                 <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center"><Sparkle size={18} className="text-white" weight="fill" /></div>
                 <div><h3 className="text-white font-semibold text-sm">Letsm AI</h3><p className="text-white/70 text-xs">{t('Always here to help', 'دائماً هنا للمساعدة')}</p></div>
               </div>
-              <div className="flex-1 overflow-y-auto p-5 space-y-3 bg-white">
+              <div ref={demoChatRef} className="flex-1 overflow-y-auto p-5 space-y-3 bg-white">
                 {demoMessages.map(msg => (
                   <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                     {msg.type === 'action' ? (
@@ -337,7 +366,7 @@ const Landing = () => {
                 ))}
                 {isTyping && <div className="flex justify-start"><div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3"><div className="flex gap-1.5"><div className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"></div><div className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style={{animationDelay:'0.15s'}}></div><div className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style={{animationDelay:'0.3s'}}></div></div></div></div>}
               </div>
-              <div className="p-4 border-t border-gray-100"><div className="flex items-center gap-2"><input type="text" disabled placeholder={t('Type a message...', 'اكتب رسالة...')} className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-full text-sm" /><button className="w-10 h-10 bg-violet-600 rounded-full flex items-center justify-center text-white"><PaperPlaneTilt size={16} weight="fill" /></button></div></div>
+              <div className="p-4 border-t border-gray-100"><div className="flex items-center gap-2"><input type="text" value={demoInput} onChange={(e) => setDemoInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendDemoMessage()} placeholder={t('Type a message...', 'اكتب رسالة...')} className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-400" data-testid="demo-chat-input" /><button onClick={sendDemoMessage} disabled={isTyping || !demoInput.trim()} className="w-10 h-10 bg-violet-600 rounded-full flex items-center justify-center text-white hover:bg-violet-700 transition-colors disabled:opacity-50" data-testid="demo-chat-send"><PaperPlaneTilt size={16} weight="fill" /></button></div></div>
             </div>
             <div className="lg:col-span-2 space-y-4">
               <h3 className="font-semibold text-gray-900 text-lg mb-2">{t('Try These Examples:', 'جرّب هذه الأمثلة:')}</h3>
