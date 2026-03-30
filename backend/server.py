@@ -15,6 +15,7 @@ from datetime import datetime, timezone, timedelta
 import bcrypt
 import jwt
 import httpx
+import resend
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
 
@@ -36,6 +37,12 @@ EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
 
 # Stripe Config
 STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
+
+# Resend Config
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY')
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
+if RESEND_API_KEY:
+    resend.api_key = RESEND_API_KEY
 
 # Subscription Plans (prices managed server-side only)
 SUBSCRIPTION_PLANS = {
@@ -1726,6 +1733,111 @@ If the user writes in Arabic, respond in Arabic. Match their language.
     except Exception as e:
         logger.error(f"WhatsApp AI error: {str(e)}")
         return {"response": "I'm having trouble right now. Please try again in a moment.", "success": False}
+
+# ==================== EMAIL DIGEST ====================
+
+class EmailPreferences(BaseModel):
+    weekly_digest: Optional[bool] = True
+    reminder_alerts: Optional[bool] = True
+
+@api_router.get("/email/preferences")
+async def get_email_preferences(user: dict = Depends(get_current_user)):
+    """Get user email notification preferences"""
+    user_doc = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0})
+    prefs = user_doc.get("email_preferences", {"weekly_digest": True, "reminder_alerts": True})
+    return {"preferences": prefs}
+
+@api_router.put("/email/preferences")
+async def update_email_preferences(prefs: EmailPreferences, user: dict = Depends(get_current_user)):
+    """Update user email notification preferences"""
+    await db.users.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {"email_preferences": prefs.dict()}}
+    )
+    return {"message": "Preferences updated", "preferences": prefs.dict()}
+
+async def generate_digest_html(user_id: str, user_email: str, user_name: str) -> str:
+    """Generate weekly productivity digest HTML for a user"""
+    now = datetime.now(timezone.utc)
+    week_ago = (now - timedelta(days=7)).isoformat()
+
+    tasks_created = await db.tasks.count_documents({"user_id": user_id, "created_at": {"$gte": week_ago}})
+    tasks_completed = await db.tasks.count_documents({"user_id": user_id, "status": "completed"})
+    pending_tasks = await db.tasks.count_documents({"user_id": user_id, "status": {"$ne": "completed"}})
+    active_reminders = await db.reminders.count_documents({"user_id": user_id, "status": "active"})
+    conversations = await db.conversations.count_documents({"user_id": user_id, "created_at": {"$gte": week_ago}})
+    messages_sent = await db.messages.count_documents({"user_id": user_id, "role": "user", "created_at": {"$gte": week_ago}})
+
+    upcoming_tasks = await db.tasks.find(
+        {"user_id": user_id, "status": {"$ne": "completed"}}, {"_id": 0}
+    ).sort("created_at", -1).to_list(5)
+
+    upcoming_html = ""
+    for t in upcoming_tasks:
+        priority_color = "#ef4444" if t.get("priority") == "high" else "#f59e0b" if t.get("priority") == "medium" else "#22c55e"
+        upcoming_html += f'<tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{priority_color};margin-right:8px;"></span>{t["title"]}</td></tr>'
+
+    if not upcoming_html:
+        upcoming_html = '<tr><td style="padding:8px 0;color:#94a3b8;">No pending tasks - great job!</td></tr>'
+
+    rate = round((tasks_completed / tasks_created * 100) if tasks_created > 0 else 0)
+    name = user_name or "there"
+
+    html = f'''<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+<div style="max-width:600px;margin:0 auto;padding:20px;">
+<div style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:16px 16px 0 0;padding:32px;text-align:center;">
+<h1 style="color:white;margin:0;font-size:24px;">Letsm AI Weekly Digest</h1>
+<p style="color:rgba(255,255,255,0.8);margin:8px 0 0;">Hi {name}, here's your productivity summary</p></div>
+<div style="background:white;padding:32px;border-radius:0 0 16px 16px;box-shadow:0 4px 6px rgba(0,0,0,0.05);">
+<h2 style="color:#1e293b;font-size:18px;margin:0 0 16px;">This Week at a Glance</h2>
+<table style="width:100%;border-collapse:collapse;margin-bottom:24px;"><tr>
+<td style="background:#f0fdf4;border-radius:12px;padding:16px;text-align:center;width:33%;"><div style="font-size:28px;font-weight:bold;color:#16a34a;">{tasks_completed}</div><div style="font-size:12px;color:#4ade80;">Tasks Done</div></td>
+<td style="width:8px;"></td>
+<td style="background:#eff6ff;border-radius:12px;padding:16px;text-align:center;width:33%;"><div style="font-size:28px;font-weight:bold;color:#2563eb;">{tasks_created}</div><div style="font-size:12px;color:#60a5fa;">Created</div></td>
+<td style="width:8px;"></td>
+<td style="background:#faf5ff;border-radius:12px;padding:16px;text-align:center;width:33%;"><div style="font-size:28px;font-weight:bold;color:#7c3aed;">{rate}%</div><div style="font-size:12px;color:#a78bfa;">Rate</div></td></tr></table>
+<table style="width:100%;border-collapse:collapse;margin-bottom:24px;"><tr>
+<td style="background:#fff7ed;border-radius:12px;padding:16px;text-align:center;width:33%;"><div style="font-size:28px;font-weight:bold;color:#ea580c;">{conversations}</div><div style="font-size:12px;color:#fb923c;">Chats</div></td>
+<td style="width:8px;"></td>
+<td style="background:#fdf2f8;border-radius:12px;padding:16px;text-align:center;width:33%;"><div style="font-size:28px;font-weight:bold;color:#db2777;">{messages_sent}</div><div style="font-size:12px;color:#f472b6;">Messages</div></td>
+<td style="width:8px;"></td>
+<td style="background:#f0f9ff;border-radius:12px;padding:16px;text-align:center;width:33%;"><div style="font-size:28px;font-weight:bold;color:#0284c7;">{active_reminders}</div><div style="font-size:12px;color:#38bdf8;">Reminders</div></td></tr></table>
+<h2 style="color:#1e293b;font-size:18px;margin:24px 0 12px;">Upcoming Tasks ({pending_tasks} pending)</h2>
+<table style="width:100%;">{upcoming_html}</table>
+<div style="margin-top:32px;text-align:center;"><a href="#" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;text-decoration:none;border-radius:50px;font-weight:600;font-size:14px;">Open Letsm AI</a></div></div>
+<p style="text-align:center;color:#94a3b8;font-size:12px;margin-top:16px;">You're receiving this because you opted in to weekly digests.</p></div>
+</body></html>'''
+    return html
+
+@api_router.post("/email/send-digest")
+async def send_weekly_digest(user: dict = Depends(get_current_user)):
+    """Send weekly productivity digest email to current user"""
+    if not RESEND_API_KEY:
+        return {"success": False, "message": "Email service not configured. Add RESEND_API_KEY to backend .env file."}
+
+    html = await generate_digest_html(user["user_id"], user["email"], user.get("name", ""))
+
+    try:
+        params = {
+            "from": f"Letsm AI <{SENDER_EMAIL}>",
+            "to": [user["email"]],
+            "subject": "Your Weekly Productivity Digest - Letsm AI",
+            "html": html
+        }
+        email_response = resend.Emails.send(params)
+        logger.info(f"Digest sent to {user['email']}: {email_response}")
+        return {"success": True, "message": "Digest email sent!", "email_id": email_response.get("id")}
+    except Exception as e:
+        logger.error(f"Email send error: {str(e)}")
+        return {"success": False, "message": str(e)}
+
+@api_router.post("/email/preview-digest")
+async def preview_digest(user: dict = Depends(get_current_user)):
+    """Preview the weekly digest HTML without sending"""
+    html = await generate_digest_html(user["user_id"], user["email"], user.get("name", ""))
+    return {"html": html}
+
 
 # ==================== WHATSAPP PROXY ====================
 

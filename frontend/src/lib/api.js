@@ -107,4 +107,12 @@ export const exportApi = {
   exportAll: () => api.get('/export/all'),
 };
 
+// Email API
+export const emailApi = {
+  getPreferences: () => api.get('/email/preferences'),
+  updatePreferences: (prefs) => api.put('/email/preferences', prefs),
+  sendDigest: () => api.post('/email/send-digest'),
+  previewDigest: () => api.post('/email/preview-digest'),
+};
+
 export default api;

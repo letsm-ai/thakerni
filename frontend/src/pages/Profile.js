@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { userApi, subscriptionApi, exportApi } from '../lib/api';
-import { User, EnvelopeSimple, Calendar, PencilSimple, Check, CrownSimple, Lightning, DownloadSimple, BellRinging, Export } from '@phosphor-icons/react';
+import { userApi, subscriptionApi, exportApi, emailApi } from '../lib/api';
+import { User, EnvelopeSimple, Calendar, PencilSimple, Check, CrownSimple, Lightning, DownloadSimple, BellRinging, Export, Envelope, Eye } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 const Profile = () => {
@@ -16,8 +16,11 @@ const Profile = () => {
   const [notifPermission, setNotifPermission] = useState(
     typeof Notification !== 'undefined' ? Notification.permission : 'denied'
   );
+  const [emailPrefs, setEmailPrefs] = useState({ weekly_digest: true, reminder_alerts: true });
+  const [sendingDigest, setSendingDigest] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState(null);
 
-  useEffect(() => { loadSubscription(); }, []);
+  useEffect(() => { loadSubscription(); loadEmailPrefs(); }, []);
 
   const loadSubscription = async () => {
     try {
@@ -30,6 +33,39 @@ const Profile = () => {
     } catch {
       setSubscription({ plan_id: 'free', plan_name: 'Free' });
     }
+  };
+
+  const loadEmailPrefs = async () => {
+    try {
+      const res = await emailApi.getPreferences();
+      setEmailPrefs(res.data.preferences);
+    } catch { /* defaults are fine */ }
+  };
+
+  const toggleEmailPref = async (key) => {
+    const updated = { ...emailPrefs, [key]: !emailPrefs[key] };
+    setEmailPrefs(updated);
+    try {
+      await emailApi.updatePreferences(updated);
+      toast.success('Email preferences updated');
+    } catch { toast.error('Failed to update preferences'); }
+  };
+
+  const handleSendDigest = async () => {
+    setSendingDigest(true);
+    try {
+      const res = await emailApi.sendDigest();
+      if (res.data.success) toast.success(res.data.message);
+      else toast.error(res.data.message);
+    } catch { toast.error('Failed to send digest'); }
+    finally { setSendingDigest(false); }
+  };
+
+  const handlePreviewDigest = async () => {
+    try {
+      const res = await emailApi.previewDigest();
+      setPreviewHtml(res.data.html);
+    } catch { toast.error('Failed to load preview'); }
   };
 
   const handleSave = async () => {
@@ -239,6 +275,80 @@ const Profile = () => {
             </button>
           )}
         </div>
+      </div>
+
+      {/* Email Digest Section */}
+      <div className="bg-white border border-slate-200 rounded-lg p-6 mb-6" data-testid="email-digest-section">
+        <div className="flex items-center gap-3 mb-4">
+          <Envelope size={22} className="text-violet-600" weight="fill" />
+          <h3 className="font-semibold text-slate-900">Weekly Email Digest</h3>
+        </div>
+        <p className="text-sm text-slate-500 mb-4">
+          Receive a weekly summary of your productivity stats, completed tasks, and upcoming items every Monday.
+        </p>
+
+        <div className="space-y-3 mb-4">
+          <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer">
+            <div>
+              <span className="text-sm font-medium text-slate-700">Weekly Digest</span>
+              <p className="text-xs text-slate-500">Monday morning summary email</p>
+            </div>
+            <button
+              onClick={() => toggleEmailPref('weekly_digest')}
+              className={`relative w-11 h-6 rounded-full transition-colors ${emailPrefs.weekly_digest ? 'bg-violet-600' : 'bg-slate-300'}`}
+              data-testid="toggle-weekly-digest"
+            >
+              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${emailPrefs.weekly_digest ? 'left-[22px]' : 'left-0.5'}`}></span>
+            </button>
+          </label>
+          <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer">
+            <div>
+              <span className="text-sm font-medium text-slate-700">Reminder Alerts</span>
+              <p className="text-xs text-slate-500">Email when reminders are due</p>
+            </div>
+            <button
+              onClick={() => toggleEmailPref('reminder_alerts')}
+              className={`relative w-11 h-6 rounded-full transition-colors ${emailPrefs.reminder_alerts ? 'bg-violet-600' : 'bg-slate-300'}`}
+              data-testid="toggle-reminder-alerts"
+            >
+              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${emailPrefs.reminder_alerts ? 'left-[22px]' : 'left-0.5'}`}></span>
+            </button>
+          </label>
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={handlePreviewDigest}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200 transition-colors"
+            data-testid="preview-digest-button">
+            <Eye size={16} />Preview Digest
+          </button>
+          <button onClick={handleSendDigest} disabled={sendingDigest}
+            className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white text-sm font-semibold rounded-lg hover:bg-violet-700 transition-colors disabled:opacity-50"
+            data-testid="send-digest-button">
+            {sendingDigest ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <Envelope size={16} weight="fill" />
+            )}
+            Send Now
+          </button>
+        </div>
+
+        {/* Digest Preview */}
+        {previewHtml && (
+          <div className="mt-4 border border-slate-200 rounded-lg overflow-hidden" data-testid="digest-preview">
+            <div className="bg-slate-50 px-4 py-2 flex items-center justify-between border-b">
+              <span className="text-xs font-medium text-slate-500">Digest Preview</span>
+              <button onClick={() => setPreviewHtml(null)} className="text-xs text-slate-400 hover:text-slate-600">Close</button>
+            </div>
+            <iframe
+              srcDoc={previewHtml}
+              title="Digest Preview"
+              className="w-full h-[500px] border-0"
+              sandbox="allow-same-origin"
+            />
+          </div>
+        )}
       </div>
 
       {/* Data Export Section */}
