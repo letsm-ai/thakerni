@@ -3,10 +3,9 @@
 ## Original Problem Statement
 Build an AI assistant SaaS platform with:
 - AI-powered conversational assistant using OpenAI GPT-5.2
-- Task management assistance
-- Reminders & calendar events management
+- Task management, Reminders & calendar events
 - WhatsApp integration for messaging
-- JWT-based authentication (email/password) + Google OAuth social login
+- JWT + Google OAuth authentication
 - Voice input via Web Speech API
 - Productivity statistics dashboard
 - Full Arabic language & RTL layout support
@@ -14,69 +13,63 @@ Build an AI assistant SaaS platform with:
 - Professional landing page to sell subscriptions
 
 ## Architecture
-
-### Tech Stack
 - **Frontend**: React 19 + Tailwind CSS + Shadcn UI + Framer Motion
 - **Backend**: FastAPI (Python) + MongoDB
 - **AI**: OpenAI GPT-5.2 via Emergent Integrations
 - **Auth**: JWT + Emergent Google OAuth
-- **Payments**: Stripe via Emergent Integrations (StripeCheckout)
-- **WhatsApp**: Baileys v7 Node.js microservice → FastAPI AI endpoint
-- **Design**: Swiss & High-Contrast archetype with Dark Mode support
+- **Payments**: Stripe via Emergent StripeCheckout
+- **WhatsApp**: Baileys v7 Node.js → FastAPI AI endpoint
+- **Email**: Resend (requires API key to send)
 
-### Key API Endpoints
-- Auth: `/api/auth/register`, `/api/auth/login`, `/api/auth/session`, `/api/auth/me`
-- Chat: `/api/chat/message`, `/api/chat/conversations`
-- Tasks: `/api/tasks` (CRUD)
-- Reminders: `/api/reminders` (CRUD)
-- Calendar: `/api/calendar/events` (CRUD)
-- Guest Chat: `/api/guest/chat` (no auth, rate limited)
-- WhatsApp AI: `/api/whatsapp/ai` (internal for Node.js service)
-- Export: `/api/export/tasks`, `/api/export/reminders`, `/api/export/conversations`, `/api/export/all`
-- Subscriptions: `/api/subscription/plans`, `/api/subscription/status`, `/api/subscription/checkout`
-- WhatsApp: `/api/whatsapp/status`, `/api/whatsapp/qr`, `/api/whatsapp/connect`, `/api/whatsapp/disconnect`
-- Stats: `/api/stats/overview`, `/api/stats/activity`, `/api/stats/streaks`
+## All Implemented Features
 
-## What's Been Implemented
-
-### Session 1 (Initial Build)
-- Complete FastAPI + MongoDB backend
-- JWT auth + Emergent Google OAuth
-- GPT-5.2 AI Chat with Arabic support
+### Core AI
+- GPT-5.2 AI chat with Arabic/English support
 - AI-powered task/reminder creation from natural language
-- Voice input (Web Speech API), Statistics dashboard
-- Full Arabic/RTL support, Basic landing page
-- WhatsApp Node.js microservice (basic)
+- Floating AI chat widget on landing page (guest, rate-limited)
+- WhatsApp 2-way AI chat forwarding
 
-### Session 2 (Payments + WhatsApp Fix)
-- Fixed WhatsApp QR Code (Baileys v7 + fetchLatestBaileysVersion)
-- Stripe Subscription Billing (checkout, webhooks, payment polling)
-- Profile Subscription UI + SubscriptionSuccess page
+### Productivity
+- Tasks CRUD with priority levels
+- Reminders CRUD with scheduling
+- Calendar events CRUD
+- Productivity statistics dashboard with streaks
+- Data export (Tasks/Reminders/Conversations/All as JSON)
 
-### Session 3 (Landing Page Overhaul)
-- Interactive Chat Demo (3 animated conversation scenarios)
-- Integrations showcase (messaging + calendar platforms)
-- Testimonials (6 user reviews with star ratings)
-- Privacy & Security section with safety guidelines
-- FAQ accordion under pricing
-- Enhanced Features section (6 cards)
+### Auth & Billing
+- JWT authentication (email/password)
+- Emergent Google OAuth social login
+- Stripe subscription billing (Free/Pro/Business tiers)
+- Checkout sessions, payment polling, webhooks
 
-### Session 4 (AI Chat Widget + WhatsApp AI)
-- Floating AI chat widget on landing page (GPT-5.2, rate limited, Arabic support)
-- WhatsApp 2-way AI forwarding (messages → GPT-5.2 → reply back)
-- WhatsApp conversation logging to MongoDB
+### Communication
+- WhatsApp QR scan + 2-way AI messaging (Baileys v7)
+- Browser notifications for reminders (native API)
+- Weekly email digest with preview (requires Resend API key)
+- Email preferences (opt-in/out toggles)
 
-### Session 5 (Polish & Features)
-- **localStorage persistence** for floating chat widget (24h expiry, clear button)
-- **Dark mode** with ThemeContext, sidebar toggle, CSS overrides, localStorage persistence
-- **Data export** — 4 endpoints (tasks, reminders, conversations, all) as JSON download
-- **Browser notifications** for reminders (native Notification API with permission flow)
-- **Demo walkthrough modal** — 5-step animated walkthrough (Chat, Tasks, Voice, WhatsApp, Stats)
+### UI/UX
+- Full Arabic/RTL support with language toggle
+- Dark mode with theme toggle (localStorage persistence)
+- Professional landing page with 9 sections (Hero, Stats, Features, Chat Demo, Integrations, Testimonials, Pricing+FAQ, Privacy, CTA)
+- Demo walkthrough modal (5-step animated guide)
+- Voice input via Web Speech API
+- Push notification system
 
-## Prioritized Backlog
+## API Endpoints (Key)
+Auth: register, login, session, me, logout
+Chat: message, conversations, guest/chat
+Tasks/Reminders/Calendar: Full CRUD
+Subscriptions: plans, status, checkout, checkout/status, webhook/stripe
+WhatsApp: status, qr, connect, disconnect, ai
+Stats: overview, activity, streaks
+Export: tasks, reminders, conversations, all
+Email: preferences (GET/PUT), send-digest, preview-digest
+Notifications: list, mark-read, check-reminders
 
-### P2 (Nice to Have)
-- Weekly email digest for productivity stats (needs email service integration)
-- Refactor `server.py` (~1,800 lines) into modular FastAPI routers
-- Add actual video content to demo modal
-- Team features for Business plan
+## Backlog
+- P2: Add Resend API key to enable email sending
+- P2: Refactor server.py (~1,900 lines) into modular routers
+- P2: Team features for Business plan
+- P2: CSV export option
+- P3: Add actual video to demo modal
