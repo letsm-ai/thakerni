@@ -64,6 +64,16 @@ export const whatsappApi = {
   getQR: () => api.get('/whatsapp/qr'),
 };
 
+// Notifications API
+export const notificationsApi = {
+  getNotifications: () => api.get('/notifications'),
+  getUnreadCount: () => api.get('/notifications/unread-count'),
+  markAsRead: (notificationId) => api.put(`/notifications/${notificationId}/read`),
+  markAllAsRead: () => api.put('/notifications/read-all'),
+  deleteNotification: (notificationId) => api.delete(`/notifications/${notificationId}`),
+  checkReminders: () => api.get('/notifications/check-reminders'),
+};
+
 // User API
 export const userApi = {
   updateProfile: (data) => api.put('/users/profile', data),

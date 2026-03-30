@@ -137,6 +137,16 @@ class CalendarEventResponse(BaseModel):
     all_day: bool
     created_at: datetime
 
+class NotificationResponse(BaseModel):
+    notification_id: str
+    user_id: str
+    title: str
+    message: str
+    type: str  # reminder, task_due, system
+    read: bool
+    created_at: datetime
+    related_id: Optional[str] = None  # reminder_id or task_id
+
 # ==================== AUTH HELPERS ====================
 
 def hash_password(password: str) -> str:
@@ -353,6 +363,99 @@ async def logout(request: Request, response: Response):
 
 # ==================== AI CHAT ROUTES ====================
 
+async def parse_and_execute_chat_action(user_message: str, user: dict) -> Optional[str]:
+    """Parse user message for task/reminder actions and execute them"""
+    action_taken = None
+    lower_msg = user_message.lower().strip()
+    
+    # ===== LIST TASKS =====
+    list_task_keywords = ['show my tasks', 'list tasks', 'my tasks', 'what are my tasks', 'show tasks', 'pending tasks']
+    if any(kw in lower_msg for kw in list_task_keywords):
+        tasks = await db.tasks.find(
+            {"user_id": user["user_id"], "completed": False},
+            {"_id": 0}
+        ).sort("created_at", -1).to_list(10)
+        
+        if not tasks:
+            return "\n\n📋 **Your Tasks**: No pending tasks! You're all caught up."
+        
+        task_list = "\n\n📋 **Your Pending Tasks:**\n"
+        for i, task in enumerate(tasks, 1):
+            priority_icon = "🔴" if task["priority"] == "high" else "🟡" if task["priority"] == "medium" else "🟢"
+            due_str = ""
+            if task.get("due_date"):
+                due_date = datetime.fromisoformat(task["due_date"])
+                due_str = f" (Due: {due_date.strftime('%b %d')})"
+            task_list += f"{i}. {priority_icon} {task['title']}{due_str}\n"
+        task_list += f"\n_Say \"complete task [number]\" to mark as done_"
+        return task_list
+    
+    # ===== COMPLETE TASK =====
+    complete_patterns = [
+        r'complete task (\d+)',
+        r'finish task (\d+)',
+        r'done with task (\d+)',
+        r'mark task (\d+)',
+        r'task (\d+) done',
+        r'task (\d+) complete'
+    ]
+    for pattern in complete_patterns:
+        match = re.search(pattern, lower_msg)
+        if match:
+            task_num = int(match.group(1))
+            tasks = await db.tasks.find(
+                {"user_id": user["user_id"], "completed": False},
+                {"_id": 0}
+            ).sort("created_at", -1).to_list(100)
+            
+            if task_num < 1 or task_num > len(tasks):
+                return f"\n\n❌ Invalid task number. You have {len(tasks)} pending tasks."
+            
+            task_to_complete = tasks[task_num - 1]
+            await db.tasks.update_one(
+                {"task_id": task_to_complete["task_id"]},
+                {"$set": {"completed": True, "completed_at": datetime.now(timezone.utc).isoformat()}}
+            )
+            return f"\n\n✅ **Task completed**: \"{task_to_complete['title']}\""
+    
+    # ===== LIST REMINDERS =====
+    list_reminder_keywords = ['show my reminders', 'list reminders', 'my reminders', 'what reminders', 'show reminders', 'upcoming reminders']
+    if any(kw in lower_msg for kw in list_reminder_keywords):
+        reminders = await db.reminders.find(
+            {"user_id": user["user_id"], "active": True},
+            {"_id": 0}
+        ).sort("reminder_time", 1).to_list(10)
+        
+        if not reminders:
+            return "\n\n🔔 **Your Reminders**: No active reminders set."
+        
+        reminder_list = "\n\n🔔 **Your Upcoming Reminders:**\n"
+        for i, rem in enumerate(reminders, 1):
+            rem_time = datetime.fromisoformat(rem["reminder_time"])
+            reminder_list += f"{i}. {rem['title']} - {rem_time.strftime('%b %d at %I:%M %p')}\n"
+        return reminder_list
+    
+    # ===== DELETE/CANCEL REMINDER =====
+    cancel_patterns = [r'cancel reminder (\d+)', r'delete reminder (\d+)', r'remove reminder (\d+)']
+    for pattern in cancel_patterns:
+        match = re.search(pattern, lower_msg)
+        if match:
+            rem_num = int(match.group(1))
+            reminders = await db.reminders.find(
+                {"user_id": user["user_id"], "active": True},
+                {"_id": 0}
+            ).sort("reminder_time", 1).to_list(100)
+            
+            if rem_num < 1 or rem_num > len(reminders):
+                return f"\n\n❌ Invalid reminder number. You have {len(reminders)} active reminders."
+            
+            rem_to_delete = reminders[rem_num - 1]
+            await db.reminders.delete_one({"reminder_id": rem_to_delete["reminder_id"]})
+            return f"\n\n🗑️ **Reminder cancelled**: \"{rem_to_delete['title']}\""
+    
+    return None
+
+
 async def parse_and_create_from_ai(user_message: str, user: dict, ai_response: str) -> Optional[str]:
     """Parse AI response for task/reminder creation commands and execute them"""
     action_taken = None
@@ -510,11 +613,18 @@ async def send_chat_message(message: ChatMessageCreate, user: dict = Depends(get
     ).sort("created_at", 1).to_list(50)
     
     try:
-        # Initialize AI chat
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=conversation_id,
-            system_message="""You are Letsm AI, a helpful and professional AI assistant. You help users with:
+        # First check for direct action commands (list tasks, complete task, etc.)
+        direct_action = await parse_and_execute_chat_action(message.message, user)
+        
+        if direct_action:
+            # For direct actions, provide a simple response + the action result
+            ai_response = "Sure!" + direct_action
+        else:
+            # Initialize AI chat for general conversation
+            chat = LlmChat(
+                api_key=EMERGENT_LLM_KEY,
+                session_id=conversation_id,
+                system_message="""You are Letsm AI, a helpful and professional AI assistant. You help users with:
 - Task management and productivity
 - Scheduling and reminders
 - General questions and assistance
@@ -522,24 +632,24 @@ async def send_chat_message(message: ChatMessageCreate, user: dict = Depends(get
 
 IMPORTANT: When users ask you to create tasks or set reminders, acknowledge their request naturally. The system will automatically create the task/reminder for them.
 
-Examples of what users might say:
-- "Remind me to call John tomorrow at 3pm" 
-- "Create task: buy groceries"
-- "Add task to finish the report by Friday"
-- "Set a reminder for the meeting at 10am"
+Users can also say:
+- "Show my tasks" or "List tasks" to see pending tasks
+- "Complete task 1" to mark task #1 as done
+- "Show my reminders" to see upcoming reminders
+- "Cancel reminder 1" to delete a reminder
 
 Be concise, friendly, and helpful. Format your responses clearly."""
-        )
-        chat.with_model("openai", "gpt-5.2")
-        
-        # Send message and get response
-        user_message_obj = UserMessage(text=message.message)
-        ai_response = await chat.send_message(user_message_obj)
-        
-        # Check for task/reminder creation from natural language
-        action_result = await parse_and_create_from_ai(message.message, user, ai_response)
-        if action_result:
-            ai_response += action_result
+            )
+            chat.with_model("openai", "gpt-5.2")
+            
+            # Send message and get response
+            user_message_obj = UserMessage(text=message.message)
+            ai_response = await chat.send_message(user_message_obj)
+            
+            # Check for task/reminder creation from natural language
+            action_result = await parse_and_create_from_ai(message.message, user, ai_response)
+            if action_result:
+                ai_response += action_result
             
     except Exception as e:
         logger.error(f"AI chat error: {str(e)}")
@@ -905,6 +1015,162 @@ async def update_profile(request: Request, user: dict = Depends(get_current_user
         picture=updated_user.get("picture"),
         created_at=created_at
     )
+
+# ==================== NOTIFICATIONS ====================
+
+@api_router.get("/notifications", response_model=List[NotificationResponse])
+async def get_notifications(user: dict = Depends(get_current_user)):
+    """Get user notifications"""
+    notifications = await db.notifications.find(
+        {"user_id": user["user_id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(50)
+    
+    result = []
+    for notif in notifications:
+        created_at = notif["created_at"]
+        if isinstance(created_at, str):
+            created_at = datetime.fromisoformat(created_at)
+        
+        result.append(NotificationResponse(
+            notification_id=notif["notification_id"],
+            user_id=notif["user_id"],
+            title=notif["title"],
+            message=notif["message"],
+            type=notif["type"],
+            read=notif.get("read", False),
+            created_at=created_at,
+            related_id=notif.get("related_id")
+        ))
+    
+    return result
+
+@api_router.get("/notifications/unread-count")
+async def get_unread_notification_count(user: dict = Depends(get_current_user)):
+    """Get count of unread notifications"""
+    count = await db.notifications.count_documents(
+        {"user_id": user["user_id"], "read": False}
+    )
+    return {"count": count}
+
+@api_router.put("/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: str, user: dict = Depends(get_current_user)):
+    """Mark a notification as read"""
+    result = await db.notifications.update_one(
+        {"notification_id": notification_id, "user_id": user["user_id"]},
+        {"$set": {"read": True}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    return {"message": "Notification marked as read"}
+
+@api_router.put("/notifications/read-all")
+async def mark_all_notifications_read(user: dict = Depends(get_current_user)):
+    """Mark all notifications as read"""
+    await db.notifications.update_many(
+        {"user_id": user["user_id"], "read": False},
+        {"$set": {"read": True}}
+    )
+    return {"message": "All notifications marked as read"}
+
+@api_router.delete("/notifications/{notification_id}")
+async def delete_notification(notification_id: str, user: dict = Depends(get_current_user)):
+    """Delete a notification"""
+    result = await db.notifications.delete_one(
+        {"notification_id": notification_id, "user_id": user["user_id"]}
+    )
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    return {"message": "Notification deleted"}
+
+@api_router.get("/notifications/check-reminders")
+async def check_due_reminders(user: dict = Depends(get_current_user)):
+    """Check for due reminders and create notifications"""
+    now = datetime.now(timezone.utc)
+    five_minutes_ago = now - timedelta(minutes=5)
+    
+    # Find reminders that are due (within the last 5 minutes to now + 1 minute)
+    due_reminders = await db.reminders.find({
+        "user_id": user["user_id"],
+        "active": True,
+        "reminder_time": {
+            "$lte": (now + timedelta(minutes=1)).isoformat(),
+            "$gte": five_minutes_ago.isoformat()
+        }
+    }, {"_id": 0}).to_list(100)
+    
+    notifications_created = []
+    
+    for reminder in due_reminders:
+        # Check if notification already exists for this reminder
+        existing = await db.notifications.find_one({
+            "related_id": reminder["reminder_id"],
+            "type": "reminder"
+        })
+        
+        if not existing:
+            notification_id = f"notif_{uuid.uuid4().hex[:12]}"
+            notification = {
+                "notification_id": notification_id,
+                "user_id": user["user_id"],
+                "title": "🔔 Reminder",
+                "message": reminder["title"],
+                "type": "reminder",
+                "read": False,
+                "related_id": reminder["reminder_id"],
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.notifications.insert_one(notification)
+            notifications_created.append(notification)
+            
+            # If reminder doesn't repeat, mark as inactive
+            if reminder.get("repeat", "none") == "none":
+                await db.reminders.update_one(
+                    {"reminder_id": reminder["reminder_id"]},
+                    {"$set": {"active": False}}
+                )
+    
+    # Also check for tasks due today
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + timedelta(days=1)
+    
+    due_tasks = await db.tasks.find({
+        "user_id": user["user_id"],
+        "completed": False,
+        "due_date": {
+            "$gte": today_start.isoformat(),
+            "$lt": today_end.isoformat()
+        }
+    }, {"_id": 0}).to_list(100)
+    
+    for task in due_tasks:
+        # Check if notification already exists for this task today
+        existing = await db.notifications.find_one({
+            "related_id": task["task_id"],
+            "type": "task_due",
+            "created_at": {"$gte": today_start.isoformat()}
+        })
+        
+        if not existing:
+            notification_id = f"notif_{uuid.uuid4().hex[:12]}"
+            notification = {
+                "notification_id": notification_id,
+                "user_id": user["user_id"],
+                "title": "📋 Task Due Today",
+                "message": task["title"],
+                "type": "task_due",
+                "read": False,
+                "related_id": task["task_id"],
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.notifications.insert_one(notification)
+            notifications_created.append(notification)
+    
+    return {
+        "checked": True,
+        "notifications_created": len(notifications_created),
+        "notifications": notifications_created
+    }
 
 # ==================== HEALTH CHECK ====================
 

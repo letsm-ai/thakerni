@@ -62,13 +62,27 @@ Build an AI assistant SaaS platform with:
 - ✅ JWT authentication with bcrypt password hashing
 - ✅ Google OAuth via Emergent Auth
 - ✅ AI Chat with OpenAI GPT-5.2
-- ✅ **AI-powered task/reminder creation from natural language** (NEW!)
+- ✅ **AI-powered task/reminder creation from natural language**
   - Say "Create task: call dentist tomorrow" → automatically creates task
   - Say "Remind me to pick up package at 3pm" → automatically creates reminder
+- ✅ **AI task management via chat** (NEW!)
+  - "Show my tasks" → lists all pending tasks with priorities
+  - "Complete task 1" → marks task #1 as done
+  - "Show my reminders" → lists upcoming reminders
+  - "Cancel reminder 1" → deletes reminder #1
+- ✅ **Push Notifications System** (NEW!)
+  - Notification bell with unread count badge
+  - Auto-check for due reminders every minute
+  - Task due date notifications
+  - Mark as read, mark all read, delete notifications
+- ✅ **WhatsApp Node.js Microservice** (NEW!)
+  - Express server with Baileys WhatsApp library
+  - QR code authentication
+  - Commands: create task, list tasks, complete task, set reminder
+  - Ready to deploy at /app/whatsapp-service
 - ✅ Tasks CRUD with priority and due dates
 - ✅ Reminders CRUD with repeat options
 - ✅ Calendar events CRUD
-- ✅ WhatsApp status/QR endpoints (Node.js service not deployed)
 - ✅ Professional Swiss-style UI design
 - ✅ All pages: Login, Dashboard, Chat, Tasks, Reminders, Calendar, WhatsApp, Profile
 
