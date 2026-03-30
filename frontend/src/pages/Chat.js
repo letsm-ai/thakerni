@@ -1,7 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { chatApi } from '../lib/api';
-import { PaperPlaneRight, Plus, Trash, ChatCircle, Robot, User, SpinnerGap } from '@phosphor-icons/react';
+import { PaperPlaneRight, Plus, Trash, ChatCircle, Robot, User, SpinnerGap, Microphone, Stop } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
+
+// Speech Recognition setup
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 const Chat = () => {
   const [conversations, setConversations] = useState([]);
@@ -10,7 +14,64 @@ const Chat = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
   const messagesEndRef = useRef(null);
+  const recognitionRef = useRef(null);
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if (SpeechRecognition) {
+      setSpeechSupported(true);
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = (event) => {
+        const transcript = Array.from(event.results)
+          .map(result => result[0].transcript)
+          .join('');
+        setInput(transcript);
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        if (event.error === 'not-allowed') {
+          toast.error('Microphone access denied. Please enable it in your browser settings.');
+        } else if (event.error === 'no-speech') {
+          toast.info('No speech detected. Please try again.');
+        }
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+    };
+  }, []);
+
+  const toggleListening = useCallback(() => {
+    if (!recognitionRef.current) return;
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      setInput('');
+      recognitionRef.current.start();
+      setIsListening(true);
+      toast.info('Listening... Speak now', { duration: 2000 });
+    }
+  }, [isListening]);
 
   useEffect(() => {
     loadConversations();
@@ -263,12 +324,35 @@ const Chat = () => {
         {/* Input Area */}
         <div className="border-t border-slate-200 bg-white p-4 relative z-50">
           <form onSubmit={handleSend} className="flex items-center gap-3">
+            {/* Voice Input Button */}
+            {speechSupported && (
+              <button
+                type="button"
+                onClick={toggleListening}
+                className={`p-2.5 rounded-md transition-all ${
+                  isListening 
+                    ? 'bg-red-500 text-white animate-pulse' 
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+                title={isListening ? 'Stop listening' : 'Voice input'}
+                data-testid="voice-input-button"
+              >
+                {isListening ? (
+                  <Stop size={20} weight="bold" />
+                ) : (
+                  <Microphone size={20} weight="bold" />
+                )}
+              </button>
+            )}
+            
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message..."
-              className="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-md text-slate-900 focus:border-[#002FA7] focus:ring-1 focus:ring-[#002FA7] outline-none transition-all"
+              placeholder={isListening ? "Listening..." : "Type your message or use voice input..."}
+              className={`flex-1 px-4 py-2.5 bg-white border rounded-md text-slate-900 focus:border-[#002FA7] focus:ring-1 focus:ring-[#002FA7] outline-none transition-all ${
+                isListening ? 'border-red-300 bg-red-50' : 'border-slate-200'
+              }`}
               disabled={sending}
               data-testid="chat-input"
             />
@@ -281,6 +365,13 @@ const Chat = () => {
               <PaperPlaneRight size={20} weight="bold" />
             </button>
           </form>
+          
+          {/* Voice Input Hint */}
+          {speechSupported && (
+            <p className="text-xs text-slate-400 mt-2 text-center">
+              💡 Try saying: "Create task buy groceries" or "Show my tasks"
+            </p>
+          )}
         </div>
       </div>
     </div>

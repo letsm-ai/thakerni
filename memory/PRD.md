@@ -80,6 +80,11 @@ Build an AI assistant SaaS platform with:
   - QR code authentication
   - Commands: create task, list tasks, complete task, set reminder
   - Ready to deploy at /app/whatsapp-service
+- ✅ **Voice Input** (NEW!)
+  - Microphone button in chat input area
+  - Web Speech API integration (Chrome, Edge, Safari supported)
+  - Real-time speech-to-text transcription
+  - Voice commands: "Create task...", "Show my tasks", "Remind me..."
 - ✅ Tasks CRUD with priority and due dates
 - ✅ Reminders CRUD with repeat options
 - ✅ Calendar events CRUD
@@ -98,13 +103,13 @@ Build an AI assistant SaaS platform with:
 
 ### P2 (Nice to Have)
 - AI-powered task suggestions
-- Voice input for AI chat
+- ~~Voice input for AI chat~~ ✅ DONE
 - Dark mode theme
 - Export data (tasks, reminders)
 - Team collaboration features
 
 ## Next Tasks
-1. Deploy WhatsApp Node.js service for full integration
-2. Add push notifications for reminders
+1. Deploy WhatsApp Node.js service (run `cd /app/whatsapp-service && yarn start`)
+2. Add browser push notifications (Web Push API)
 3. Implement task completion statistics
 4. Add AI conversation export feature
