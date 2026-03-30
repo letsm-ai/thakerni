@@ -18,6 +18,8 @@ import httpx
 import resend
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -1839,6 +1841,69 @@ async def preview_digest(user: dict = Depends(get_current_user)):
     return {"html": html}
 
 
+# ==================== SCHEDULED DIGEST JOB ====================
+
+async def send_all_weekly_digests():
+    """Background job: send weekly digest to all opted-in users"""
+    if not RESEND_API_KEY:
+        logger.warning("Skipping scheduled digest — RESEND_API_KEY not configured.")
+        return
+
+    logger.info("Starting scheduled weekly digest job...")
+    sent, failed = 0, 0
+    cursor = db.users.find(
+        {"email_preferences.weekly_digest": {"$ne": False}},
+        {"_id": 0, "user_id": 1, "email": 1, "name": 1}
+    )
+    async for user_doc in cursor:
+        try:
+            html = await generate_digest_html(
+                user_doc["user_id"], user_doc["email"], user_doc.get("name", "")
+            )
+            resend.Emails.send({
+                "from": f"Letsm AI <{SENDER_EMAIL}>",
+                "to": [user_doc["email"]],
+                "subject": "Your Weekly Productivity Digest - Letsm AI",
+                "html": html
+            })
+            sent += 1
+        except Exception as e:
+            logger.error(f"Digest failed for {user_doc.get('email')}: {e}")
+            failed += 1
+
+    logger.info(f"Weekly digest complete — sent: {sent}, failed: {failed}")
+    await db.digest_logs.insert_one({
+        "log_id": str(uuid.uuid4()),
+        "sent": sent,
+        "failed": failed,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+
+scheduler = AsyncIOScheduler()
+
+@api_router.post("/email/trigger-digest-batch")
+async def trigger_digest_batch(user: dict = Depends(get_current_user)):
+    """Admin-only: manually trigger the weekly digest batch for all users"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    import asyncio
+    asyncio.create_task(send_all_weekly_digests())
+    return {"success": True, "message": "Digest batch job triggered in background."}
+
+@api_router.get("/email/digest-schedule")
+async def get_digest_schedule(user: dict = Depends(get_current_user)):
+    """Get info about the scheduled digest job"""
+    jobs = scheduler.get_jobs()
+    digest_job = next((j for j in jobs if j.id == "weekly_digest"), None)
+    next_run = str(digest_job.next_run_time) if digest_job else None
+    last_log = await db.digest_logs.find_one(sort=[("timestamp", -1)], projection={"_id": 0})
+    return {
+        "scheduled": digest_job is not None,
+        "next_run": next_run,
+        "last_run": last_log
+    }
+
+
 # ==================== WHATSAPP PROXY ====================
 
 WHATSAPP_SERVICE_URL = "http://localhost:3001"
@@ -1914,6 +1979,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
+async def startup_scheduler():
+    scheduler.add_job(
+        send_all_weekly_digests,
+        trigger=CronTrigger(day_of_week="sun", hour=9, minute=0),
+        id="weekly_digest",
+        replace_existing=True,
+    )
+    scheduler.start()
+    logger.info("Scheduler started — weekly digest runs every Sunday at 09:00 UTC")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    scheduler.shutdown(wait=False)
     client.close()

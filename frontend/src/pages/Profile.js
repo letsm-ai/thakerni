@@ -19,8 +19,9 @@ const Profile = () => {
   const [emailPrefs, setEmailPrefs] = useState({ weekly_digest: true, reminder_alerts: true });
   const [sendingDigest, setSendingDigest] = useState(false);
   const [previewHtml, setPreviewHtml] = useState(null);
+  const [digestSchedule, setDigestSchedule] = useState(null);
 
-  useEffect(() => { loadSubscription(); loadEmailPrefs(); }, []);
+  useEffect(() => { loadSubscription(); loadEmailPrefs(); loadDigestSchedule(); }, []);
 
   const loadSubscription = async () => {
     try {
@@ -40,6 +41,13 @@ const Profile = () => {
       const res = await emailApi.getPreferences();
       setEmailPrefs(res.data.preferences);
     } catch { /* defaults are fine */ }
+  };
+
+  const loadDigestSchedule = async () => {
+    try {
+      const res = await emailApi.getSchedule();
+      setDigestSchedule(res.data);
+    } catch { /* non-critical */ }
   };
 
   const toggleEmailPref = async (key) => {
@@ -284,14 +292,23 @@ const Profile = () => {
           <h3 className="font-semibold text-slate-900">Weekly Email Digest</h3>
         </div>
         <p className="text-sm text-slate-500 mb-4">
-          Receive a weekly summary of your productivity stats, completed tasks, and upcoming items every Monday.
+          Receive a weekly summary of your productivity stats, completed tasks, and upcoming items every Sunday.
         </p>
+
+        {digestSchedule?.next_run && (
+          <div className="flex items-center gap-2 p-3 bg-violet-50 border border-violet-200 rounded-lg mb-4 text-sm" data-testid="digest-schedule-info">
+            <Calendar size={16} className="text-violet-600 flex-shrink-0" />
+            <span className="text-violet-800">
+              Next automated digest: <strong>{new Date(digestSchedule.next_run).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</strong>
+            </span>
+          </div>
+        )}
 
         <div className="space-y-3 mb-4">
           <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer">
             <div>
               <span className="text-sm font-medium text-slate-700">Weekly Digest</span>
-              <p className="text-xs text-slate-500">Monday morning summary email</p>
+              <p className="text-xs text-slate-500">Sunday morning summary email</p>
             </div>
             <button
               onClick={() => toggleEmailPref('weekly_digest')}

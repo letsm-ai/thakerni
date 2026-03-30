@@ -113,6 +113,7 @@ export const emailApi = {
   updatePreferences: (prefs) => api.put('/email/preferences', prefs),
   sendDigest: () => api.post('/email/send-digest'),
   previewDigest: () => api.post('/email/preview-digest'),
+  getSchedule: () => api.get('/email/digest-schedule'),
 };
 
 export default api;

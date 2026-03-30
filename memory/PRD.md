@@ -13,13 +13,14 @@ Build an AI assistant SaaS platform with:
 - Professional landing page to sell subscriptions
 
 ## Architecture
-- **Frontend**: React 19 + Tailwind CSS + Shadcn UI + Framer Motion
-- **Backend**: FastAPI (Python) + MongoDB
+- **Frontend**: React 19 + Tailwind CSS + Shadcn UI + Framer Motion + Phosphor Icons
+- **Backend**: FastAPI (Python) + MongoDB + APScheduler
 - **AI**: OpenAI GPT-5.2 via Emergent Integrations
 - **Auth**: JWT + Emergent Google OAuth
 - **Payments**: Stripe via Emergent StripeCheckout
 - **WhatsApp**: Baileys v7 Node.js → FastAPI AI endpoint
 - **Email**: Resend (requires API key to send)
+- **Scheduler**: APScheduler (AsyncIOScheduler) for weekly email digests
 
 ## All Implemented Features
 
@@ -45,13 +46,15 @@ Build an AI assistant SaaS platform with:
 ### Communication
 - WhatsApp QR scan + 2-way AI messaging (Baileys v7)
 - Browser notifications for reminders (native API)
-- Weekly email digest with preview (requires Resend API key)
+- Weekly email digest with automated CRON scheduling (every Sunday 09:00 UTC)
 - Email preferences (opt-in/out toggles)
+- Digest schedule visibility in Profile page
 
 ### UI/UX
 - Full Arabic/RTL support with language toggle
 - Dark mode with theme toggle (localStorage persistence)
-- Professional landing page with 9 sections (Hero, Stats, Features, Chat Demo, Integrations, Testimonials, Pricing+FAQ, Privacy, CTA)
+- Professional landing page redesigned to match atoms.world aesthetic (Pastel & Soft / Swiss Clean)
+  - 9 sections: Hero, Features, Advanced Features, Live Demo, Real Conversations, Integrations, Testimonials, Privacy, Pricing+FAQ, CTA
 - Demo walkthrough modal (5-step animated guide)
 - Voice input via Web Speech API
 - Push notification system
@@ -64,12 +67,12 @@ Subscriptions: plans, status, checkout, checkout/status, webhook/stripe
 WhatsApp: status, qr, connect, disconnect, ai
 Stats: overview, activity, streaks
 Export: tasks, reminders, conversations, all
-Email: preferences (GET/PUT), send-digest, preview-digest
+Email: preferences (GET/PUT), send-digest, preview-digest, digest-schedule, trigger-digest-batch (admin)
 Notifications: list, mark-read, check-reminders
 
 ## Backlog
-- P2: Add Resend API key to enable email sending
-- P2: Refactor server.py (~1,900 lines) into modular routers
+- P2: Add Resend API key to enable live email sending
+- P2: Refactor server.py (~1,950 lines) into modular routers
 - P2: Team features for Business plan
 - P2: CSV export option
 - P3: Add actual video to demo modal
