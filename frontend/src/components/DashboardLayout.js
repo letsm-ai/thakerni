@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { notificationsApi } from '../lib/api';
 import {
   ChatCircle,
@@ -12,22 +13,42 @@ import {
   SignOut,
   List,
   X,
-  ChartBar
+  ChartBar,
+  Translate
 } from '@phosphor-icons/react';
 import { Sheet, SheetContent, SheetTrigger } from '../components/ui/sheet';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 
-const navItems = [
-  { path: '/dashboard', icon: ChatCircle, label: 'AI Chat' },
-  { path: '/dashboard/tasks', icon: CheckSquare, label: 'Tasks' },
-  { path: '/dashboard/reminders', icon: Bell, label: 'Reminders' },
-  { path: '/dashboard/calendar', icon: Calendar, label: 'Calendar' },
-  { path: '/dashboard/statistics', icon: ChartBar, label: 'Statistics' },
-  { path: '/dashboard/whatsapp', icon: WhatsappLogo, label: 'WhatsApp' },
-  { path: '/dashboard/profile', icon: User, label: 'Profile' },
+const getNavItems = (t) => [
+  { path: '/dashboard', icon: ChatCircle, label: t('aiChat') },
+  { path: '/dashboard/tasks', icon: CheckSquare, label: t('tasks') },
+  { path: '/dashboard/reminders', icon: Bell, label: t('reminders') },
+  { path: '/dashboard/calendar', icon: Calendar, label: t('calendar') },
+  { path: '/dashboard/statistics', icon: ChartBar, label: t('statistics') },
+  { path: '/dashboard/whatsapp', icon: WhatsappLogo, label: t('whatsApp') },
+  { path: '/dashboard/profile', icon: User, label: t('profile') },
 ];
 
+const LanguageToggle = () => {
+  const { language, toggleLanguage } = useLanguage();
+  
+  return (
+    <button
+      onClick={toggleLanguage}
+      className="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+      title={language === 'en' ? 'Switch to Arabic' : 'التبديل إلى الإنجليزية'}
+      data-testid="language-toggle-btn"
+    >
+      <Translate size={18} className="text-slate-600" />
+      <span className="text-sm font-semibold text-slate-700">
+        {language === 'en' ? 'العربية' : 'English'}
+      </span>
+    </button>
+  );
+};
+
 const NotificationBell = () => {
+  const { t } = useLanguage();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
@@ -125,14 +146,14 @@ const NotificationBell = () => {
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
         <div className="border-b border-slate-200 p-3 flex items-center justify-between">
-          <h3 className="font-semibold text-slate-900">Notifications</h3>
+          <h3 className="font-semibold text-slate-900">{t('notifications')}</h3>
           {unreadCount > 0 && (
             <button
               onClick={handleMarkAllRead}
               className="text-xs text-[#002FA7] hover:underline"
               data-testid="mark-all-read"
             >
-              Mark all read
+              {t('markAllRead')}
             </button>
           )}
         </div>
@@ -177,7 +198,9 @@ const NotificationBell = () => {
 const Sidebar = ({ onItemClick }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { t, isRTL } = useLanguage();
   const navigate = useNavigate();
+  const navItems = getNavItems(t);
 
   const handleLogout = async () => {
     await logout();
@@ -185,7 +208,7 @@ const Sidebar = ({ onItemClick }) => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-slate-50 border-r border-slate-200">
+    <div className={`h-full flex flex-col bg-slate-50 ${isRTL ? 'border-l' : 'border-r'} border-slate-200`}>
       {/* Logo */}
       <div className="p-6 border-b border-slate-200">
         <Link to="/dashboard" className="flex items-center gap-3" data-testid="sidebar-logo">
@@ -196,6 +219,11 @@ const Sidebar = ({ onItemClick }) => {
           />
           <span className="font-bold text-slate-900 font-heading text-lg">Letsm AI</span>
         </Link>
+      </div>
+
+      {/* Language Toggle */}
+      <div className="px-4 pt-4">
+        <LanguageToggle />
       </div>
 
       {/* Navigation */}
@@ -245,7 +273,7 @@ const Sidebar = ({ onItemClick }) => {
           data-testid="logout-button"
         >
           <SignOut size={20} />
-          <span className="font-medium text-sm">Sign Out</span>
+          <span className="font-medium text-sm">{t('signOut')}</span>
         </button>
       </div>
     </div>
@@ -254,9 +282,10 @@ const Sidebar = ({ onItemClick }) => {
 
 const DashboardLayout = ({ children }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const { isRTL } = useLanguage();
 
   return (
-    <div className="h-screen flex bg-white">
+    <div className={`h-screen flex bg-white ${isRTL ? 'flex-row-reverse' : ''}`}>
       {/* Desktop Sidebar */}
       <div className="hidden md:block w-64 flex-shrink-0">
         <Sidebar />

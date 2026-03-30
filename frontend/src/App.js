@@ -2,6 +2,7 @@ import React from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { LanguageProvider } from "./context/LanguageContext";
 import { Toaster } from "./components/ui/sonner";
 
 // Pages
@@ -117,10 +118,12 @@ function App() {
   return (
     <div className="App">
       <BrowserRouter>
-        <AuthProvider>
-          <AppRouter />
-          <Toaster position="top-right" />
-        </AuthProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <AppRouter />
+            <Toaster position="top-right" />
+          </AuthProvider>
+        </LanguageProvider>
       </BrowserRouter>
     </div>
   );

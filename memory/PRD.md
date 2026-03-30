@@ -85,11 +85,17 @@ Build an AI assistant SaaS platform with:
   - Web Speech API integration (Chrome, Edge, Safari supported)
   - Real-time speech-to-text transcription
   - Voice commands: "Create task...", "Show my tasks", "Remind me..."
-- ✅ **Statistics Dashboard** (NEW!)
+- ✅ **Statistics Dashboard**
   - Productivity overview: Tasks completed, pending, AI conversations, reminders
   - Current streak tracking (consecutive days with completed tasks)
   - Weekly activity chart (bar graph)
   - Quick stats panel with productivity score
+- ✅ **Full RTL (Right-to-Left) Support** (NEW!)
+  - Complete Arabic language translations
+  - RTL layout for sidebar, navigation, and content
+  - Language toggle button (English/العربية)
+  - Arabic font (Noto Sans Arabic)
+  - Persisted language preference in localStorage
 - ✅ Tasks CRUD with priority and due dates
 - ✅ Reminders CRUD with repeat options
 - ✅ Calendar events CRUD
