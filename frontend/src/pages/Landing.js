@@ -7,7 +7,7 @@ import {
   Star, Lightning, Globe, CheckCircle, Clock, Sparkle, Microphone,
   WhatsappLogo, TelegramLogo, ChatCircle, Lock, Eye, UserCheck,
   FileText, PaperPlaneTilt, CaretRight, X, ChartBar, Lightbulb,
-  ArrowsClockwise, BellSimple, Translate, Image
+  ArrowsClockwise, BellSimple, Translate, Image, List
 } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
 
@@ -138,6 +138,7 @@ const Landing = () => {
     { q: t('What payment methods do you accept?', 'ما طرق الدفع المقبولة؟'), a: t('We accept all major credit cards and debit cards through our secure payment processor Stripe.', 'نقبل جميع بطاقات الائتمان والخصم عبر Stripe.') },
   ];
   const [openFaq, setOpenFaq] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // ── Messaging / Calendar integrations ──
   const messaging = [
@@ -180,10 +181,27 @@ const Landing = () => {
             <Link to="/login" className="text-gray-500 hover:text-gray-900 text-sm font-medium transition-colors">{t('Sign In', 'دخول')}</Link>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={toggleLanguage} className="text-gray-500 hover:text-gray-900 text-sm font-medium"><Globe size={18} /></button>
-            <Link to="/login" className="bg-violet-600 text-white text-sm font-medium px-5 py-2.5 rounded-full hover:bg-violet-700 transition-colors" data-testid="get-started-btn">{t('Get Started', 'ابدأ')}</Link>
+            <button onClick={toggleLanguage} className="text-gray-500 hover:text-gray-900 text-sm font-medium" data-testid="lang-toggle"><Globe size={18} /></button>
+            <Link to="/login" className="hidden sm:inline-flex bg-violet-600 text-white text-sm font-medium px-5 py-2.5 rounded-full hover:bg-violet-700 transition-colors" data-testid="get-started-btn">{t('Get Started', 'ابدأ')}</Link>
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden text-gray-700 p-1" data-testid="mobile-menu-toggle">
+              {mobileMenuOpen ? <X size={24} /> : <List size={24} />}
+            </button>
           </div>
         </div>
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
+            className="md:hidden bg-white/95 backdrop-blur-lg border-t border-gray-100 px-6 pb-6 pt-3" data-testid="mobile-menu">
+            <div className="flex flex-col gap-1">
+              <a href="#features" onClick={() => setMobileMenuOpen(false)} className="py-3 text-gray-700 font-medium text-base border-b border-gray-50">{t('Features', 'المميزات')}</a>
+              <a href="#demo" onClick={() => setMobileMenuOpen(false)} className="py-3 text-gray-700 font-medium text-base border-b border-gray-50">{t('Demo', 'تجربة')}</a>
+              <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="py-3 text-gray-700 font-medium text-base border-b border-gray-50">{t('Pricing', 'الأسعار')}</a>
+              <a href="#privacy" onClick={() => setMobileMenuOpen(false)} className="py-3 text-gray-700 font-medium text-base border-b border-gray-50">{t('Privacy', 'الخصوصية')}</a>
+              <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="py-3 text-gray-700 font-medium text-base border-b border-gray-50">{t('Sign In', 'دخول')}</Link>
+              <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="mt-3 bg-violet-600 text-white text-center font-medium py-3 rounded-full hover:bg-violet-700 transition-colors" data-testid="mobile-get-started-btn">{t('Get Started Free', 'ابدأ مجاناً')}</Link>
+            </div>
+          </motion.div>
+        )}
       </nav>
 
       {/* ── HERO ── */}
