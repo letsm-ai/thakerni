@@ -99,4 +99,12 @@ export const subscriptionApi = {
   checkPaymentStatus: (sessionId) => api.get(`/subscription/checkout/status/${sessionId}`),
 };
 
+// Export API
+export const exportApi = {
+  exportTasks: () => api.get('/export/tasks'),
+  exportReminders: () => api.get('/export/reminders'),
+  exportConversations: () => api.get('/export/conversations'),
+  exportAll: () => api.get('/export/all'),
+};
+
 export default api;

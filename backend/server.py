@@ -1386,6 +1386,64 @@ async def get_streaks(user: dict = Depends(get_current_user)):
         "streak_unit": "days"
     }
 
+# ==================== DATA EXPORT ====================
+
+@api_router.get("/export/tasks")
+async def export_tasks(user: dict = Depends(get_current_user)):
+    """Export all user tasks as JSON"""
+    tasks = await db.tasks.find(
+        {"user_id": user["user_id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(1000)
+    return {"tasks": tasks, "count": len(tasks), "exported_at": datetime.now(timezone.utc).isoformat()}
+
+@api_router.get("/export/reminders")
+async def export_reminders(user: dict = Depends(get_current_user)):
+    """Export all user reminders as JSON"""
+    reminders = await db.reminders.find(
+        {"user_id": user["user_id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(1000)
+    return {"reminders": reminders, "count": len(reminders), "exported_at": datetime.now(timezone.utc).isoformat()}
+
+@api_router.get("/export/conversations")
+async def export_conversations(user: dict = Depends(get_current_user)):
+    """Export all user conversations with messages as JSON"""
+    conversations = await db.conversations.find(
+        {"user_id": user["user_id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+
+    result = []
+    for conv in conversations:
+        messages = await db.messages.find(
+            {"conversation_id": conv["conversation_id"]},
+            {"_id": 0}
+        ).sort("created_at", 1).to_list(500)
+        result.append({**conv, "messages": messages})
+
+    return {"conversations": result, "count": len(result), "exported_at": datetime.now(timezone.utc).isoformat()}
+
+@api_router.get("/export/all")
+async def export_all_data(user: dict = Depends(get_current_user)):
+    """Export all user data (tasks, reminders, conversations)"""
+    tasks = await db.tasks.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(1000)
+    reminders = await db.reminders.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(1000)
+    conversations = await db.conversations.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(100)
+
+    conv_data = []
+    for conv in conversations:
+        messages = await db.messages.find({"conversation_id": conv["conversation_id"]}, {"_id": 0}).sort("created_at", 1).to_list(500)
+        conv_data.append({**conv, "messages": messages})
+
+    return {
+        "user": {"email": user["email"], "name": user.get("name")},
+        "tasks": {"data": tasks, "count": len(tasks)},
+        "reminders": {"data": reminders, "count": len(reminders)},
+        "conversations": {"data": conv_data, "count": len(conv_data)},
+        "exported_at": datetime.now(timezone.utc).isoformat()
+    }
+
 # ==================== STRIPE / SUBSCRIPTIONS ====================
 
 class CheckoutRequest(BaseModel):

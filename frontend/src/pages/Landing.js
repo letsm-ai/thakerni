@@ -29,7 +29,9 @@ import {
   PaperPlaneTilt,
   Robot,
   User,
-  CaretRight
+  CaretRight,
+  X,
+  ChartBar
 } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
 
@@ -219,6 +221,7 @@ const Landing = () => {
   ];
 
   const [openFaq, setOpenFaq] = useState(null);
+  const [showVideoModal, setShowVideoModal] = useState(false);
 
   return (
     <div className={`min-h-screen ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
@@ -271,10 +274,10 @@ const Landing = () => {
                   {language === 'ar' ? 'ابدأ مجاناً' : 'Get Started Free'}
                   <ArrowRight size={20} weight="bold" className={`transition-transform group-hover:translate-x-1 ${isRTL ? 'rotate-180' : ''}`} />
                 </Link>
-                <a href="#demo" className="inline-flex items-center gap-2 px-7 py-4 bg-white text-slate-700 font-semibold rounded-full border border-slate-200 hover:border-slate-300 hover:shadow-lg transition-all">
+                <button onClick={() => setShowVideoModal(true)} className="inline-flex items-center gap-2 px-7 py-4 bg-white text-slate-700 font-semibold rounded-full border border-slate-200 hover:border-slate-300 hover:shadow-lg transition-all" data-testid="watch-demo-button">
                   <Play size={20} weight="fill" className="text-violet-600" />
-                  {language === 'ar' ? 'شاهد العرض' : 'Try Demo'}
-                </a>
+                  {language === 'ar' ? 'شاهد العرض' : 'Watch Demo'}
+                </button>
               </div>
               <div className="flex flex-wrap gap-3">
                 {features.map((feature, index) => (
@@ -623,6 +626,57 @@ const Landing = () => {
           </div>
         </div>
       </footer>
+
+      {/* Video Demo Modal */}
+      {showVideoModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setShowVideoModal(false)} data-testid="video-modal-overlay">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}
+            className="bg-white rounded-2xl shadow-2xl max-w-3xl w-[90%] overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-violet-600 to-indigo-600 p-5 flex items-center justify-between">
+              <h3 className="text-white font-bold text-lg">{language === 'ar' ? 'شاهد كيف يعمل Letsm AI' : 'See How Letsm AI Works'}</h3>
+              <button onClick={() => setShowVideoModal(false)} className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors" data-testid="close-video-modal">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-8">
+              {/* Demo walkthrough steps */}
+              <div className="space-y-6">
+                {[
+                  { step: 1, icon: ChatTeardrop, title: language === 'ar' ? 'تحدث بشكل طبيعي' : 'Chat Naturally', desc: language === 'ar' ? 'اكتب أو تحدث بلغتك الطبيعية. الذكاء الاصطناعي يفهم السياق والنوايا.' : 'Type or speak in your natural language. The AI understands context and intent.', color: 'from-violet-500 to-indigo-500' },
+                  { step: 2, icon: Lightning, title: language === 'ar' ? 'مهام تلقائية' : 'Auto-Create Tasks', desc: language === 'ar' ? 'قل "ذكرني بالاجتماع غداً" وسيتم إنشاء المهمة والتذكير تلقائياً.' : 'Say "remind me about the meeting tomorrow" and tasks/reminders are created automatically.', color: 'from-blue-500 to-cyan-500' },
+                  { step: 3, icon: Microphone, title: language === 'ar' ? 'أوامر صوتية' : 'Voice Commands', desc: language === 'ar' ? 'استخدم الميكروفون للتحدث مباشرة. يدعم العربية والإنجليزية.' : 'Use the microphone to speak directly. Supports Arabic and English voice input.', color: 'from-pink-500 to-rose-500' },
+                  { step: 4, icon: WhatsappLogo, title: language === 'ar' ? 'واتساب متكامل' : 'WhatsApp Integration', desc: language === 'ar' ? 'امسح رمز QR وتحدث مع الذكاء الاصطناعي عبر واتساب.' : 'Scan a QR code and chat with the AI directly through WhatsApp.', color: 'from-green-500 to-emerald-500' },
+                  { step: 5, icon: ChartBar, title: language === 'ar' ? 'تتبع إنتاجيتك' : 'Track Productivity', desc: language === 'ar' ? 'لوحة إحصائيات شاملة تعرض أنماط عملك وإنجازاتك.' : 'Comprehensive stats dashboard showing your work patterns and achievements.', color: 'from-amber-500 to-orange-500' },
+                ].map((item, i) => (
+                  <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: i * 0.15 }}
+                    className="flex items-start gap-4">
+                    <div className={`w-12 h-12 bg-gradient-to-br ${item.color} rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg`}>
+                      <item.icon size={24} className="text-white" weight="fill" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-bold text-slate-400 uppercase">Step {item.step}</span>
+                      </div>
+                      <h4 className="font-bold text-slate-900">{item.title}</h4>
+                      <p className="text-sm text-slate-600 mt-0.5">{item.desc}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+              <div className="mt-8 flex justify-center gap-3">
+                <a href="#demo" onClick={() => setShowVideoModal(false)}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-700 font-semibold rounded-full hover:bg-slate-200 transition-colors">
+                  {language === 'ar' ? 'جرّب التجربة التفاعلية' : 'Try Interactive Demo'}
+                  <ArrowRight size={16} weight="bold" className={isRTL ? 'rotate-180' : ''} />
+                </a>
+                <Link to="/login" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold rounded-full hover:shadow-lg transition-all">
+                  {language === 'ar' ? 'ابدأ مجاناً' : 'Get Started Free'}
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Floating AI Chat Widget */}
       <FloatingChat language={language} isRTL={isRTL} />

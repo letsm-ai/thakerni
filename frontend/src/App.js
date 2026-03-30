@@ -3,6 +3,7 @@ import "@/App.css";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { LanguageProvider } from "./context/LanguageContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import { Toaster } from "./components/ui/sonner";
 
 // Pages
@@ -131,12 +132,14 @@ function App() {
   return (
     <div className="App">
       <BrowserRouter>
-        <LanguageProvider>
-          <AuthProvider>
-            <AppRouter />
-            <Toaster position="top-right" />
-          </AuthProvider>
-        </LanguageProvider>
+        <ThemeProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <AppRouter />
+              <Toaster position="top-right" />
+            </AuthProvider>
+          </LanguageProvider>
+        </ThemeProvider>
       </BrowserRouter>
     </div>
   );

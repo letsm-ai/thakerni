@@ -42,6 +42,28 @@ code {
         --ring: 224 100% 33%;
         --radius: 0.5rem;
     }
+
+    .dark {
+        --background: 222 47% 6%;
+        --foreground: 210 40% 96%;
+        --card: 222 47% 9%;
+        --card-foreground: 210 40% 96%;
+        --popover: 222 47% 9%;
+        --popover-foreground: 210 40% 96%;
+        --primary: 224 100% 55%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 217 33% 15%;
+        --secondary-foreground: 210 40% 96%;
+        --muted: 217 33% 15%;
+        --muted-foreground: 215 20% 65%;
+        --accent: 217 33% 15%;
+        --accent-foreground: 210 40% 96%;
+        --destructive: 343 82% 50%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 217 33% 18%;
+        --input: 217 33% 18%;
+        --ring: 224 100% 55%;
+    }
 }
 
 @layer base {
@@ -178,3 +200,64 @@ input:focus, textarea:focus, button:focus {
 [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4, [dir="rtl"] h5, [dir="rtl"] h6 {
     font-family: 'Noto Sans Arabic', 'Outfit', sans-serif;
 }
+
+/* Dark mode overrides */
+.dark body {
+    background-color: hsl(222, 47%, 6%);
+    color: hsl(210, 40%, 96%);
+}
+
+.dark .bg-white {
+    background-color: hsl(222, 47%, 9%) !important;
+}
+
+.dark .bg-slate-50 {
+    background-color: hsl(222, 47%, 7%) !important;
+}
+
+.dark .bg-slate-100 {
+    background-color: hsl(217, 33%, 12%) !important;
+}
+
+.dark .text-slate-900 {
+    color: hsl(210, 40%, 96%) !important;
+}
+
+.dark .text-slate-800 {
+    color: hsl(210, 40%, 90%) !important;
+}
+
+.dark .text-slate-700 {
+    color: hsl(210, 40%, 80%) !important;
+}
+
+.dark .text-slate-600 {
+    color: hsl(215, 20%, 65%) !important;
+}
+
+.dark .text-slate-500 {
+    color: hsl(215, 16%, 55%) !important;
+}
+
+.dark .border-slate-200 {
+    border-color: hsl(217, 33%, 18%) !important;
+}
+
+.dark .border-slate-100 {
+    border-color: hsl(217, 33%, 15%) !important;
+}
+
+.dark ::-webkit-scrollbar-track {
+    background: hsl(222, 47%, 9%);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: hsl(217, 33%, 25%);
+}
+
+.dark input, .dark textarea, .dark select {
+    background-color: hsl(217, 33%, 12%);
+    color: hsl(210, 40%, 96%);
+    border-color: hsl(217, 33%, 20%);
+}
+

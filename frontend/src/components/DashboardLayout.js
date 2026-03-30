@@ -14,10 +14,13 @@ import {
   List,
   X,
   ChartBar,
-  Translate
+  Translate,
+  Moon,
+  Sun
 } from '@phosphor-icons/react';
 import { Sheet, SheetContent, SheetTrigger } from '../components/ui/sheet';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
+import { useTheme } from '../context/ThemeContext';
 
 const getNavItems = (t) => [
   { path: '/dashboard', icon: ChatCircle, label: t('aiChat') },
@@ -35,13 +38,31 @@ const LanguageToggle = () => {
   return (
     <button
       onClick={toggleLanguage}
-      className="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+      className="flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
       title={language === 'en' ? 'Switch to Arabic' : 'التبديل إلى الإنجليزية'}
       data-testid="language-toggle-btn"
     >
-      <Translate size={18} className="text-slate-600" />
-      <span className="text-sm font-semibold text-slate-700">
+      <Translate size={18} className="text-slate-600 dark:text-slate-300" />
+      <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
         {language === 'en' ? 'العربية' : 'English'}
+      </span>
+    </button>
+  );
+};
+
+const ThemeToggle = () => {
+  const { isDark, toggleTheme } = useTheme();
+  
+  return (
+    <button
+      onClick={toggleTheme}
+      className="flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+      title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+      data-testid="theme-toggle-btn"
+    >
+      {isDark ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-slate-600" />}
+      <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+        {isDark ? 'Light' : 'Dark'}
       </span>
     </button>
   );
@@ -68,8 +89,15 @@ const NotificationBell = () => {
 
   const checkReminders = useCallback(async () => {
     try {
-      await notificationsApi.checkReminders();
+      const res = await notificationsApi.checkReminders();
       fetchNotifications();
+      // Trigger browser notifications for new due reminders
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && res.data?.triggered > 0) {
+        new Notification('Letsm AI Reminder', {
+          body: `You have ${res.data.triggered} reminder${res.data.triggered > 1 ? 's' : ''} due now!`,
+          icon: '/favicon.ico'
+        });
+      }
     } catch (error) {
       console.error('Error checking reminders:', error);
     }
@@ -221,9 +249,10 @@ const Sidebar = ({ onItemClick }) => {
         </Link>
       </div>
 
-      {/* Language Toggle */}
-      <div className="px-4 pt-4">
+      {/* Language & Theme Toggle */}
+      <div className="px-4 pt-4 space-y-2">
         <LanguageToggle />
+        <ThemeToggle />
       </div>
 
       {/* Navigation */}
