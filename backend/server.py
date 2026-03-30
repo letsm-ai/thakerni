@@ -368,8 +368,11 @@ async def parse_and_execute_chat_action(user_message: str, user: dict) -> Option
     action_taken = None
     lower_msg = user_message.lower().strip()
     
-    # ===== LIST TASKS =====
-    list_task_keywords = ['show my tasks', 'list tasks', 'my tasks', 'what are my tasks', 'show tasks', 'pending tasks']
+    # ===== LIST TASKS (English + Arabic) =====
+    list_task_keywords = [
+        'show my tasks', 'list tasks', 'my tasks', 'what are my tasks', 'show tasks', 'pending tasks',
+        'اعرض مهامي', 'قائمة المهام', 'مهامي', 'ما هي مهامي', 'المهام المعلقة', 'اظهر المهام'
+    ]
     if any(kw in lower_msg for kw in list_task_keywords):
         tasks = await db.tasks.find(
             {"user_id": user["user_id"], "completed": False},
@@ -377,9 +380,9 @@ async def parse_and_execute_chat_action(user_message: str, user: dict) -> Option
         ).sort("created_at", -1).to_list(10)
         
         if not tasks:
-            return "\n\n📋 **Your Tasks**: No pending tasks! You're all caught up."
+            return "\n\n📋 **مهامك / Your Tasks**: لا توجد مهام معلقة! / No pending tasks!"
         
-        task_list = "\n\n📋 **Your Pending Tasks:**\n"
+        task_list = "\n\n📋 **المهام المعلقة / Pending Tasks:**\n"
         for i, task in enumerate(tasks, 1):
             priority_icon = "🔴" if task["priority"] == "high" else "🟡" if task["priority"] == "medium" else "🟢"
             due_str = ""
@@ -387,17 +390,21 @@ async def parse_and_execute_chat_action(user_message: str, user: dict) -> Option
                 due_date = datetime.fromisoformat(task["due_date"])
                 due_str = f" (Due: {due_date.strftime('%b %d')})"
             task_list += f"{i}. {priority_icon} {task['title']}{due_str}\n"
-        task_list += f"\n_Say \"complete task [number]\" to mark as done_"
+        task_list += f"\n_Say \"complete task [number]\" / قل \"أكمل المهمة [رقم]\"_"
         return task_list
     
-    # ===== COMPLETE TASK =====
+    # ===== COMPLETE TASK (English + Arabic) =====
     complete_patterns = [
         r'complete task (\d+)',
         r'finish task (\d+)',
         r'done with task (\d+)',
         r'mark task (\d+)',
         r'task (\d+) done',
-        r'task (\d+) complete'
+        r'task (\d+) complete',
+        r'أكمل المهمة (\d+)',
+        r'انهي المهمة (\d+)',
+        r'المهمة (\d+) منتهية',
+        r'أنجز المهمة (\d+)'
     ]
     for pattern in complete_patterns:
         match = re.search(pattern, lower_msg)
@@ -418,8 +425,11 @@ async def parse_and_execute_chat_action(user_message: str, user: dict) -> Option
             )
             return f"\n\n✅ **Task completed**: \"{task_to_complete['title']}\""
     
-    # ===== LIST REMINDERS =====
-    list_reminder_keywords = ['show my reminders', 'list reminders', 'my reminders', 'what reminders', 'show reminders', 'upcoming reminders']
+    # ===== LIST REMINDERS (English + Arabic) =====
+    list_reminder_keywords = [
+        'show my reminders', 'list reminders', 'my reminders', 'what reminders', 'show reminders', 'upcoming reminders',
+        'اعرض تذكيراتي', 'قائمة التذكيرات', 'تذكيراتي', 'التذكيرات القادمة', 'اظهر التذكيرات'
+    ]
     if any(kw in lower_msg for kw in list_reminder_keywords):
         reminders = await db.reminders.find(
             {"user_id": user["user_id"], "active": True},
@@ -427,16 +437,19 @@ async def parse_and_execute_chat_action(user_message: str, user: dict) -> Option
         ).sort("reminder_time", 1).to_list(10)
         
         if not reminders:
-            return "\n\n🔔 **Your Reminders**: No active reminders set."
+            return "\n\n🔔 **تذكيراتك / Your Reminders**: لا توجد تذكيرات نشطة / No active reminders."
         
-        reminder_list = "\n\n🔔 **Your Upcoming Reminders:**\n"
+        reminder_list = "\n\n🔔 **التذكيرات القادمة / Upcoming Reminders:**\n"
         for i, rem in enumerate(reminders, 1):
             rem_time = datetime.fromisoformat(rem["reminder_time"])
             reminder_list += f"{i}. {rem['title']} - {rem_time.strftime('%b %d at %I:%M %p')}\n"
         return reminder_list
     
-    # ===== DELETE/CANCEL REMINDER =====
-    cancel_patterns = [r'cancel reminder (\d+)', r'delete reminder (\d+)', r'remove reminder (\d+)']
+    # ===== DELETE/CANCEL REMINDER (English + Arabic) =====
+    cancel_patterns = [
+        r'cancel reminder (\d+)', r'delete reminder (\d+)', r'remove reminder (\d+)',
+        r'احذف التذكير (\d+)', r'الغي التذكير (\d+)', r'امسح التذكير (\d+)'
+    ]
     for pattern in cancel_patterns:
         match = re.search(pattern, lower_msg)
         if match:
@@ -463,8 +476,15 @@ async def parse_and_create_from_ai(user_message: str, user: dict, ai_response: s
     # Check if the message contains task/reminder intent
     lower_msg = user_message.lower()
     
-    task_keywords = ['create task', 'add task', 'new task', 'make a task', 'todo:', 'task:']
-    reminder_keywords = ['remind me', 'set reminder', 'create reminder', 'add reminder', 'reminder:']
+    # English + Arabic keywords
+    task_keywords = [
+        'create task', 'add task', 'new task', 'make a task', 'todo:', 'task:',
+        'أنشئ مهمة', 'اضف مهمة', 'مهمة جديدة', 'مهمة:'
+    ]
+    reminder_keywords = [
+        'remind me', 'set reminder', 'create reminder', 'add reminder', 'reminder:',
+        'ذكرني', 'اضف تذكير', 'انشئ تذكير', 'تذكير:'
+    ]
     
     has_task_intent = any(kw in lower_msg for kw in task_keywords)
     has_reminder_intent = any(kw in lower_msg for kw in reminder_keywords)
@@ -630,13 +650,19 @@ async def send_chat_message(message: ChatMessageCreate, user: dict = Depends(get
 - General questions and assistance
 - WhatsApp integration guidance
 
+IMPORTANT LANGUAGE RULE: Always detect the user's language and respond in the SAME language. If the user writes in Arabic, respond in Arabic. If they write in English, respond in English. Match their language exactly.
+
+أنت مساعد ذكي يدعم اللغة العربية بشكل كامل. إذا كتب المستخدم بالعربية، أجب بالعربية.
+
 IMPORTANT: When users ask you to create tasks or set reminders, acknowledge their request naturally. The system will automatically create the task/reminder for them.
 
-Users can also say:
-- "Show my tasks" or "List tasks" to see pending tasks
-- "Complete task 1" to mark task #1 as done
-- "Show my reminders" to see upcoming reminders
-- "Cancel reminder 1" to delete a reminder
+Users can also say (in any language):
+- "Show my tasks" / "اعرض مهامي" to see pending tasks
+- "Complete task 1" / "أكمل المهمة 1" to mark task as done
+- "Show my reminders" / "اعرض تذكيراتي" to see upcoming reminders
+- "Cancel reminder 1" / "احذف التذكير 1" to delete a reminder
+- "Create task" / "أنشئ مهمة" to create a new task
+- "Remind me" / "ذكرني" to set a reminder
 
 Be concise, friendly, and helpful. Format your responses clearly."""
             )

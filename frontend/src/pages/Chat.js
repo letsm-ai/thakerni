@@ -16,17 +16,19 @@ const Chat = () => {
   const [sending, setSending] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [speechLang, setSpeechLang] = useState('en-US');
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
 
-  // Initialize speech recognition
+  // Initialize speech recognition with language support
   useEffect(() => {
     if (SpeechRecognition) {
       setSpeechSupported(true);
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = true;
-      recognition.lang = 'en-US';
+      // Support both English and Arabic
+      recognition.lang = speechLang;
 
       recognition.onresult = (event) => {
         const transcript = Array.from(event.results)
@@ -57,7 +59,7 @@ const Chat = () => {
         recognitionRef.current.abort();
       }
     };
-  }, []);
+  }, [speechLang]);
 
   const toggleListening = useCallback(() => {
     if (!recognitionRef.current) return;
@@ -324,6 +326,19 @@ const Chat = () => {
         {/* Input Area */}
         <div className="border-t border-slate-200 bg-white p-4 relative z-50">
           <form onSubmit={handleSend} className="flex items-center gap-3">
+            {/* Language Toggle for Voice */}
+            {speechSupported && (
+              <button
+                type="button"
+                onClick={() => setSpeechLang(speechLang === 'en-US' ? 'ar-SA' : 'en-US')}
+                className="p-2.5 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all text-xs font-bold"
+                title={`Voice: ${speechLang === 'en-US' ? 'English' : 'العربية'} - Click to switch`}
+                data-testid="language-toggle"
+              >
+                {speechLang === 'en-US' ? 'EN' : 'ع'}
+              </button>
+            )}
+            
             {/* Voice Input Button */}
             {speechSupported && (
               <button
@@ -349,11 +364,12 @@ const Chat = () => {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={isListening ? "Listening..." : "Type your message or use voice input..."}
+              placeholder={isListening ? (speechLang === 'ar-SA' ? "جاري الاستماع..." : "Listening...") : "Type your message... / اكتب رسالتك..."}
               className={`flex-1 px-4 py-2.5 bg-white border rounded-md text-slate-900 focus:border-[#002FA7] focus:ring-1 focus:ring-[#002FA7] outline-none transition-all ${
                 isListening ? 'border-red-300 bg-red-50' : 'border-slate-200'
               }`}
               disabled={sending}
+              dir="auto"
               data-testid="chat-input"
             />
             <button
@@ -366,10 +382,12 @@ const Chat = () => {
             </button>
           </form>
           
-          {/* Voice Input Hint */}
+          {/* Voice Input Hint - Bilingual */}
           {speechSupported && (
             <p className="text-xs text-slate-400 mt-2 text-center">
-              💡 Try saying: "Create task buy groceries" or "Show my tasks"
+              💡 {speechLang === 'ar-SA' 
+                ? 'جرب قول: "أنشئ مهمة شراء البقالة" أو "اعرض مهامي"' 
+                : 'Try saying: "Create task buy groceries" or "Show my tasks"'}
             </p>
           )}
         </div>
