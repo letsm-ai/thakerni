@@ -1,31 +1,47 @@
-const { makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 const express = require('express');
 const cors = require('cors');
-const axios = require('axios');
-const qrcode = require('qrcode-terminal');
+const fs = require('fs');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const FASTAPI_URL = process.env.FASTAPI_URL || 'http://localhost:8001';
 const PORT = process.env.PORT || 3001;
 
 let sock = null;
 let qrCode = null;
 let isConnected = false;
 let connectedUser = null;
-
-// Store user sessions
-const userSessions = new Map();
+let isInitializing = false;
+let qrTimestamp = null;
+let lastError = null;
 
 async function initWhatsApp() {
+    if (isInitializing) {
+        console.log('Already initializing, skipping...');
+        return;
+    }
+    isInitializing = true;
+    lastError = null;
+
     try {
+        if (sock) {
+            try { sock.end(); } catch(e) {}
+            sock = null;
+        }
+
+        qrCode = null;
+        qrTimestamp = null;
+
         const { state, saveCreds } = await useMultiFileAuthState('auth_info');
+        const { version } = await fetchLatestBaileysVersion();
+        console.log('Using WA version:', version);
 
         sock = makeWASocket({
+            version,
             auth: state,
-            printQRInTerminal: false,
+            printQRInTerminal: true,
             browser: ['Letsm AI', 'Chrome', '1.0.0']
         });
 
@@ -34,23 +50,36 @@ async function initWhatsApp() {
 
             if (qr) {
                 qrCode = qr;
-                console.log('QR Code generated - scan with WhatsApp');
-                qrcode.generate(qr, { small: true });
+                qrTimestamp = Date.now();
+                console.log('QR Code generated - ready for scanning');
             }
 
             if (connection === 'close') {
                 isConnected = false;
+                isInitializing = false;
                 connectedUser = null;
-                const shouldReconnect = (lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut;
-                console.log('Connection closed, reconnecting:', shouldReconnect);
-
-                if (shouldReconnect) {
+                const statusCode = (lastDisconnect?.error)?.output?.statusCode;
+                const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+                console.log('Connection closed, statusCode:', statusCode, 'reconnecting:', shouldReconnect);
+                
+                if (statusCode === 405) {
+                    lastError = 'WhatsApp version mismatch. Retrying with latest version...';
+                    // Clear auth and retry
+                    try { fs.rmSync('auth_info', { recursive: true, force: true }); } catch(e) {}
+                    setTimeout(initWhatsApp, 3000);
+                } else if (shouldReconnect) {
                     setTimeout(initWhatsApp, 5000);
+                } else {
+                    try { fs.rmSync('auth_info', { recursive: true, force: true }); } catch(e) {}
+                    lastError = 'Logged out. Click Connect to generate a new QR code.';
                 }
             } else if (connection === 'open') {
                 console.log('WhatsApp connected successfully');
                 isConnected = true;
+                isInitializing = false;
                 qrCode = null;
+                qrTimestamp = null;
+                lastError = null;
                 connectedUser = sock.user;
             }
         });
@@ -68,7 +97,9 @@ async function initWhatsApp() {
         sock.ev.on('creds.update', saveCreds);
 
     } catch (error) {
-        console.error('WhatsApp initialization error:', error);
+        console.error('WhatsApp initialization error:', error.message);
+        lastError = error.message;
+        isInitializing = false;
         setTimeout(initWhatsApp, 10000);
     }
 }
@@ -78,17 +109,11 @@ async function handleIncomingMessage(message) {
         const phoneNumber = message.key.remoteJid.replace('@s.whatsapp.net', '');
         const messageText = message.message.conversation ||
                            message.message.extendedTextMessage?.text || '';
-
         console.log(`Received from ${phoneNumber}: ${messageText}`);
-
-        // Process task commands
         const response = processTaskCommand(phoneNumber, messageText);
-
-        // Send response back
         if (response) {
             await sendMessage(phoneNumber, response);
         }
-
     } catch (error) {
         console.error('Error handling incoming message:', error);
     }
@@ -97,78 +122,45 @@ async function handleIncomingMessage(message) {
 function processTaskCommand(phoneNumber, messageText) {
     const text = messageText.toLowerCase().trim();
 
-    // Help command
     if (text === 'help' || text === '?' || text === 'commands') {
-        return `🤖 *Letsm AI WhatsApp Bot*
-
-📝 *Task Commands:*
-• \`create task: [description]\` - Create new task
-• \`list tasks\` - Show pending tasks
-• \`complete task [number]\` - Complete a task
-
-🔔 *Reminder Commands:*
-• \`remind me [description]\` - Set reminder
-• \`list reminders\` - Show reminders
-
-❓ *Other:*
-• \`help\` - Show this menu
-
-_Example: create task: buy groceries_`;
+        return `*Letsm AI WhatsApp Bot*\n\n*Task Commands:*\n- create task: [description]\n- list tasks\n- complete task [number]\n\n*Reminder Commands:*\n- remind me [description]\n- list reminders\n\nSend help to see this menu`;
     }
 
-    // Create task
     if (text.startsWith('create task:') || text.startsWith('add task:') || text.startsWith('task:')) {
         const taskDesc = messageText.split(':').slice(1).join(':').trim();
-        if (taskDesc) {
-            // Store task (in production, this would call the FastAPI backend)
-            return `✅ Task created: *${taskDesc}*\n\n_Open the Letsm AI app to manage your tasks._`;
-        }
-        return '❌ Please provide a task description.\nExample: `create task: buy groceries`';
+        if (taskDesc) return `Task created: *${taskDesc}*\n\nOpen Letsm AI app to manage tasks.`;
+        return 'Please provide a task description.\nExample: create task: buy groceries';
     }
 
-    // List tasks
     if (text === 'list tasks' || text === 'show tasks' || text === 'my tasks') {
-        return `📋 *Your Tasks*\n\n_To view and manage all your tasks, please open the Letsm AI app._\n\n🔗 Open: letsm.ai/dashboard/tasks`;
+        return `*Your Tasks*\n\nOpen the Letsm AI app to view and manage all tasks.`;
     }
 
-    // Complete task
     if (text.startsWith('complete task') || text.startsWith('done task')) {
         const taskNum = text.match(/\d+/);
-        if (taskNum) {
-            return `✅ Task #${taskNum[0]} marked as complete!\n\n_View all tasks in the Letsm AI app._`;
-        }
-        return '❌ Please specify task number.\nExample: `complete task 1`';
+        if (taskNum) return `Task #${taskNum[0]} marked as complete!`;
+        return 'Please specify task number.\nExample: complete task 1';
     }
 
-    // Remind me
     if (text.startsWith('remind me')) {
         const reminderText = messageText.substring(9).trim();
-        if (reminderText) {
-            return `🔔 Reminder set: *${reminderText}*\n\n_Manage reminders in the Letsm AI app._`;
-        }
-        return '❌ Please provide reminder details.\nExample: `remind me to call John at 3pm`';
+        if (reminderText) return `Reminder set: *${reminderText}*\n\nManage reminders in Letsm AI app.`;
+        return 'Please provide reminder details.\nExample: remind me to call John at 3pm';
     }
 
-    // List reminders
     if (text === 'list reminders' || text === 'show reminders' || text === 'my reminders') {
-        return `🔔 *Your Reminders*\n\n_To view and manage all reminders, please open the Letsm AI app._\n\n🔗 Open: letsm.ai/dashboard/reminders`;
+        return `*Your Reminders*\n\nOpen Letsm AI app to view and manage reminders.`;
     }
 
-    // Default response
-    return `👋 Hi! I'm Letsm AI assistant.\n\nSend \`help\` to see available commands.\n\n_Quick tip: Try \`create task: buy groceries\`_`;
+    return `Hi! I'm Letsm AI assistant.\n\nSend *help* to see available commands.`;
 }
 
 async function sendMessage(phoneNumber, text) {
     try {
-        if (!sock || !isConnected) {
-            throw new Error('WhatsApp not connected');
-        }
-
+        if (!sock || !isConnected) throw new Error('WhatsApp not connected');
         const jid = phoneNumber.includes('@') ? phoneNumber : `${phoneNumber}@s.whatsapp.net`;
         await sock.sendMessage(jid, { text });
-        console.log(`Sent to ${phoneNumber}: ${text.substring(0, 50)}...`);
         return { success: true };
-
     } catch (error) {
         console.error('Error sending message:', error);
         return { success: false, error: error.message };
@@ -177,16 +169,48 @@ async function sendMessage(phoneNumber, text) {
 
 // REST API endpoints
 app.get('/qr', (req, res) => {
-    res.json({ qr: qrCode || null });
+    const qrAge = qrTimestamp ? (Date.now() - qrTimestamp) / 1000 : null;
+    res.json({
+        qr: qrCode || null,
+        age_seconds: qrAge,
+        expired: qrAge ? qrAge > 60 : false
+    });
 });
 
 app.get('/status', (req, res) => {
     res.json({
         connected: isConnected,
-        user: connectedUser ? {
-            id: connectedUser.id,
-            name: connectedUser.name
-        } : null
+        initializing: isInitializing,
+        has_qr: !!qrCode,
+        error: lastError,
+        user: connectedUser ? { id: connectedUser.id, name: connectedUser.name } : null
+    });
+});
+
+app.post('/connect', async (req, res) => {
+    if (isConnected) {
+        return res.json({ message: 'Already connected', connected: true });
+    }
+
+    try { fs.rmSync('auth_info', { recursive: true, force: true }); } catch(e) {}
+    qrCode = null;
+    qrTimestamp = null;
+    isInitializing = false;
+    lastError = null;
+
+    initWhatsApp();
+
+    let waited = 0;
+    while (!qrCode && waited < 15000) {
+        await new Promise(r => setTimeout(r, 500));
+        waited += 500;
+    }
+
+    res.json({
+        message: qrCode ? 'QR code generated' : 'Initializing connection, poll /qr for updates',
+        qr: qrCode || null,
+        initializing: isInitializing,
+        error: lastError
     });
 });
 
@@ -201,23 +225,27 @@ app.post('/send', async (req, res) => {
 
 app.post('/disconnect', (req, res) => {
     if (sock) {
-        sock.logout();
+        try { sock.logout(); } catch(e) {}
         isConnected = false;
         connectedUser = null;
         qrCode = null;
+        qrTimestamp = null;
+        lastError = null;
     }
     res.json({ message: 'Disconnected' });
 });
 
 app.get('/health', (req, res) => {
-    res.json({ 
+    res.json({
         status: 'healthy',
         whatsapp_connected: isConnected,
+        initializing: isInitializing,
+        has_qr: !!qrCode,
+        error: lastError,
         timestamp: new Date().toISOString()
     });
 });
 
-// Start server
 app.listen(PORT, () => {
     console.log(`WhatsApp service running on port ${PORT}`);
     console.log('Initializing WhatsApp connection...');

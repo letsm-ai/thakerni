@@ -62,6 +62,8 @@ export const calendarApi = {
 export const whatsappApi = {
   getStatus: () => api.get('/whatsapp/status'),
   getQR: () => api.get('/whatsapp/qr'),
+  connect: () => api.post('/whatsapp/connect'),
+  disconnect: () => api.post('/whatsapp/disconnect'),
 };
 
 // Notifications API
@@ -84,6 +86,17 @@ export const statsApi = {
 // User API
 export const userApi = {
   updateProfile: (data) => api.put('/users/profile', data),
+};
+
+// Subscription API
+export const subscriptionApi = {
+  getPlans: () => api.get('/subscription/plans'),
+  getStatus: () => api.get('/subscription/status'),
+  createCheckout: (planId) => api.post('/subscription/checkout', {
+    plan_id: planId,
+    origin_url: window.location.origin
+  }),
+  checkPaymentStatus: (sessionId) => api.get(`/subscription/checkout/status/${sessionId}`),
 };
 
 export default api;

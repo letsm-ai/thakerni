@@ -1,20 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { 
-  Robot, 
-  CheckCircle, 
-  Bell, 
-  Calendar, 
-  WhatsappLogo, 
-  Microphone,
-  ChartBar,
+  ArrowRight,
+  Play,
+  ChatTeardrop,
+  Calendar,
+  ShieldCheck,
+  Brain,
+  Check,
+  Star,
   Lightning,
   Globe,
-  ShieldCheck,
-  ArrowRight,
-  Star,
-  Play
+  CheckCircle,
+  Clock,
+  Sparkle
 } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
 
@@ -23,261 +23,316 @@ const Landing = () => {
 
   const features = [
     {
-      icon: Robot,
-      title: language === 'ar' ? 'محادثة ذكية' : 'AI Chat Assistant',
-      description: language === 'ar' 
-        ? 'تحدث مع مساعدك الذكي بأي لغة. أنشئ مهام وتذكيرات بالصوت أو الكتابة.'
-        : 'Chat with your AI assistant in any language. Create tasks and reminders with voice or text.',
-    },
-    {
-      icon: CheckCircle,
-      title: language === 'ar' ? 'إدارة المهام' : 'Task Management',
-      description: language === 'ar'
-        ? 'نظم مهامك بالأولويات والمواعيد. تتبع إنجازاتك بسهولة.'
-        : 'Organize tasks with priorities and due dates. Track your accomplishments easily.',
-    },
-    {
-      icon: Bell,
-      title: language === 'ar' ? 'تذكيرات ذكية' : 'Smart Reminders',
-      description: language === 'ar'
-        ? 'لا تنسَ أي شيء. تذكيرات فورية ومتكررة حسب احتياجاتك.'
-        : 'Never forget anything. Instant and recurring reminders based on your needs.',
+      icon: ChatTeardrop,
+      title: language === 'ar' ? 'لغة طبيعية' : 'Natural Language',
+      color: 'text-green-500',
+      bg: 'bg-green-50',
     },
     {
       icon: Calendar,
-      title: language === 'ar' ? 'تقويم متكامل' : 'Integrated Calendar',
-      description: language === 'ar'
-        ? 'اعرض جميع أحداثك ومهامك في مكان واحد.'
-        : 'View all your events and tasks in one place.',
+      title: language === 'ar' ? 'جدولة ذكية' : 'Smart Scheduling',
+      color: 'text-blue-500',
+      bg: 'bg-blue-50',
     },
     {
-      icon: WhatsappLogo,
-      title: language === 'ar' ? 'تكامل واتساب' : 'WhatsApp Integration',
-      description: language === 'ar'
-        ? 'أدر مهامك وتذكيراتك مباشرة من واتساب.'
-        : 'Manage your tasks and reminders directly from WhatsApp.',
+      icon: Brain,
+      title: language === 'ar' ? 'وعي سياقي' : 'Context-Aware',
+      color: 'text-purple-500',
+      bg: 'bg-purple-50',
     },
     {
-      icon: Microphone,
-      title: language === 'ar' ? 'إدخال صوتي' : 'Voice Input',
-      description: language === 'ar'
-        ? 'تحدث بدلاً من الكتابة. يدعم العربية والإنجليزية.'
-        : 'Speak instead of typing. Supports Arabic and English.',
+      icon: ShieldCheck,
+      title: language === 'ar' ? 'الخصوصية أولاً' : 'Privacy-First',
+      color: 'text-rose-500',
+      bg: 'bg-rose-50',
     },
   ];
 
-  const stats = [
-    { value: '10K+', label: language === 'ar' ? 'مستخدم نشط' : 'Active Users' },
-    { value: '500K+', label: language === 'ar' ? 'مهمة مكتملة' : 'Tasks Completed' },
-    { value: '99.9%', label: language === 'ar' ? 'وقت التشغيل' : 'Uptime' },
-    { value: '24/7', label: language === 'ar' ? 'دعم متواصل' : 'Support' },
+  const detailedFeatures = [
+    {
+      icon: ChatTeardrop,
+      title: language === 'ar' ? 'تفاعل بلغتك الطبيعية' : 'Interact Naturally',
+      description: language === 'ar' 
+        ? 'تحدث مع Letsm AI كما تتحدث مع صديق. يفهم السياق ويتذكر تفضيلاتك.'
+        : 'Talk to Letsm AI like you would to a friend. It understands context and remembers your preferences.',
+    },
+    {
+      icon: Calendar,
+      title: language === 'ar' ? 'إدارة ذكية للمهام' : 'Smart Task Management',
+      description: language === 'ar'
+        ? 'أنشئ مهام وتذكيرات بجملة واحدة. "ذكرني بالاجتماع غداً الساعة 3"'
+        : 'Create tasks and reminders with a single sentence. "Remind me about the meeting tomorrow at 3"',
+    },
+    {
+      icon: Clock,
+      title: language === 'ar' ? 'تذكيرات لا تُنسى' : 'Never Miss a Reminder',
+      description: language === 'ar'
+        ? 'إشعارات فورية عبر التطبيق والواتساب. ابقَ على اطلاع دائم.'
+        : 'Instant notifications via app and WhatsApp. Stay always on track.',
+    },
+    {
+      icon: Sparkle,
+      title: language === 'ar' ? 'مدعوم بـ GPT-5.2' : 'Powered by GPT-5.2',
+      description: language === 'ar'
+        ? 'أحدث تقنيات الذكاء الاصطناعي لفهم أعمق ومساعدة أذكى.'
+        : 'Latest AI technology for deeper understanding and smarter assistance.',
+    },
   ];
 
   const plans = [
     {
       name: language === 'ar' ? 'مجاني' : 'Free',
       price: '$0',
-      period: language === 'ar' ? '/شهرياً' : '/month',
       features: language === 'ar' 
-        ? ['5 مهام', '3 محادثات يومياً', 'تذكيرات أساسية']
-        : ['5 Tasks', '3 Conversations/day', 'Basic Reminders'],
+        ? ['5 مهام نشطة', '3 محادثات يومياً', 'تذكيرات أساسية', 'دعم البريد']
+        : ['5 Active Tasks', '3 Conversations/day', 'Basic Reminders', 'Email Support'],
       cta: language === 'ar' ? 'ابدأ مجاناً' : 'Start Free',
       highlighted: false,
     },
     {
       name: language === 'ar' ? 'احترافي' : 'Pro',
       price: '$9.99',
-      period: language === 'ar' ? '/شهرياً' : '/month',
+      period: language === 'ar' ? '/شهرياً' : '/mo',
       features: language === 'ar'
-        ? ['مهام غير محدودة', 'محادثات غير محدودة', 'تذكيرات متقدمة', 'إحصائيات الإنتاجية', 'إدخال صوتي']
-        : ['Unlimited Tasks', 'Unlimited Conversations', 'Advanced Reminders', 'Productivity Stats', 'Voice Input'],
-      cta: language === 'ar' ? 'ابدأ الآن' : 'Get Started',
+        ? ['مهام غير محدودة', 'محادثات غير محدودة', 'إدخال صوتي', 'إحصائيات متقدمة', 'أولوية الدعم']
+        : ['Unlimited Tasks', 'Unlimited Conversations', 'Voice Input', 'Advanced Analytics', 'Priority Support'],
+      cta: language === 'ar' ? 'اشترك الآن' : 'Subscribe Now',
       highlighted: true,
     },
     {
       name: language === 'ar' ? 'أعمال' : 'Business',
       price: '$29.99',
-      period: language === 'ar' ? '/شهرياً' : '/month',
+      period: language === 'ar' ? '/شهرياً' : '/mo',
       features: language === 'ar'
-        ? ['كل ميزات Pro', 'تكامل واتساب', 'فريق عمل', 'API مخصص', 'دعم أولوية']
-        : ['All Pro Features', 'WhatsApp Integration', 'Team Collaboration', 'Custom API', 'Priority Support'],
-      cta: language === 'ar' ? 'تواصل معنا' : 'Contact Us',
+        ? ['كل ميزات Pro', 'تكامل واتساب', 'فريق حتى 10 أعضاء', 'API مخصص', 'مدير حساب']
+        : ['All Pro Features', 'WhatsApp Integration', 'Team up to 10', 'Custom API', 'Account Manager'],
+      cta: language === 'ar' ? 'تواصل معنا' : 'Contact Sales',
       highlighted: false,
     },
   ];
 
   return (
-    <div className={`min-h-screen bg-white ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className={`min-h-screen ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img
-              src="https://static.prod-images.emergentagent.com/jobs/9d301dcd-e3e4-482d-9d3a-1c2d6b41093f/images/7432755b702d2a2a26f7a6ef3b6c0c1c2e834acae24098a23273963d9cd5719c.png"
-              alt="Letsm AI"
-              className="h-9 w-auto"
-            />
+            <div className="w-10 h-10 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-xl flex items-center justify-center">
+              <Sparkle size={22} className="text-white" weight="fill" />
+            </div>
             <span className="font-bold text-xl text-slate-900 font-heading">Letsm AI</span>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-8">
+            <a href="#features" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
+              {language === 'ar' ? 'المميزات' : 'Features'}
+            </a>
+            <a href="#demo" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
+              {language === 'ar' ? 'تجربة' : 'Demo'}
+            </a>
+            <a href="#pricing" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
+              {language === 'ar' ? 'الأسعار' : 'Pricing'}
+            </a>
+            <a href="#privacy" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
+              {language === 'ar' ? 'الخصوصية' : 'Privacy'}
+            </a>
+          </div>
+          
+          <div className="flex items-center gap-3">
             <button
               onClick={toggleLanguage}
               className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-slate-900 transition-colors"
             >
-              <Globe size={20} />
-              <span className="text-sm font-medium">{language === 'ar' ? 'English' : 'العربية'}</span>
+              <Globe size={18} />
+              <span className="text-sm font-medium hidden sm:inline">{language === 'ar' ? 'EN' : 'ع'}</span>
             </button>
             
             <Link
               to="/login"
-              className="px-4 py-2 text-slate-700 font-medium hover:text-slate-900 transition-colors"
+              className="px-4 py-2 text-slate-700 font-medium hover:text-slate-900 transition-colors hidden sm:block"
             >
-              {language === 'ar' ? 'تسجيل الدخول' : 'Sign In'}
+              {language === 'ar' ? 'دخول' : 'Sign In'}
             </Link>
             
             <Link
               to="/login"
-              className="px-5 py-2.5 bg-[#002FA7] text-white font-semibold rounded-lg hover:bg-[#001A7A] transition-colors"
+              className="px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold rounded-full hover:shadow-lg hover:shadow-violet-500/25 transition-all"
             >
-              {language === 'ar' ? 'ابدأ مجاناً' : 'Start Free'}
+              {language === 'ar' ? 'ابدأ مجاناً' : 'Get Started'}
             </Link>
           </div>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-6">
-        <div className="max-w-7xl mx-auto">
+      <section className="relative pt-28 pb-20 overflow-hidden">
+        {/* Background Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-50 via-white to-indigo-50"></div>
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-violet-100/50 to-transparent"></div>
+        
+        {/* Decorative Elements */}
+        <div className="absolute top-40 left-10 w-72 h-72 bg-violet-200 rounded-full blur-3xl opacity-30"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-indigo-200 rounded-full blur-3xl opacity-30"></div>
+        
+        <div className="relative max-w-7xl mx-auto px-6">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.6 }}
+              className={isRTL ? 'lg:order-2' : ''}
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#002FA7]/10 rounded-full mb-6">
-                <Lightning size={16} className="text-[#002FA7]" weight="fill" />
-                <span className="text-sm font-medium text-[#002FA7]">
-                  {language === 'ar' ? 'مدعوم بـ GPT-5.2' : 'Powered by GPT-5.2'}
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-slate-200 mb-8">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium text-slate-600">
+                  {language === 'ar' ? 'مساعد شخصي ذكي' : 'AI-Powered Personal Assistant'}
                 </span>
               </div>
               
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 font-heading leading-tight mb-6">
-                {language === 'ar' ? (
-                  <>مساعدك الذكي<br /><span className="text-[#002FA7]">لإدارة حياتك</span></>
-                ) : (
-                  <>Your AI Assistant<br /><span className="text-[#002FA7]">For Life Management</span></>
-                )}
+              {/* Headline */}
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold font-heading leading-[1.1] mb-6">
+                <span className="bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent">
+                  {language === 'ar' ? 'حياتك،' : 'Your Life,'}
+                </span>
+                <br />
+                <span className="text-slate-900">
+                  {language === 'ar' ? 'مُبسَّطة' : 'Simplified'}
+                </span>
               </h1>
               
-              <p className="text-lg text-slate-600 mb-8 max-w-lg">
+              {/* Subheading */}
+              <p className="text-xl text-slate-600 mb-8 max-w-lg leading-relaxed">
                 {language === 'ar'
-                  ? 'أنشئ مهام، ضع تذكيرات، ونظم جدولك بمحادثة بسيطة. يدعم العربية والإنجليزية بالصوت والنص.'
-                  : 'Create tasks, set reminders, and organize your schedule with a simple conversation. Supports Arabic and English with voice and text.'}
+                  ? 'تعرّف على Letsm AI - مساعدك الذكي الذي يدير مهامك، تذكيراتك، وجدولك من خلال محادثة طبيعية.'
+                  : 'Meet Letsm AI - your intelligent assistant that manages your tasks, reminders, and schedule through natural conversation.'}
               </p>
               
-              <div className="flex flex-wrap gap-4">
+              {/* CTAs */}
+              <div className="flex flex-wrap gap-4 mb-10">
                 <Link
                   to="/login"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#002FA7] text-white font-semibold rounded-lg hover:bg-[#001A7A] transition-colors"
+                  className="group inline-flex items-center gap-2 px-7 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold rounded-full hover:shadow-xl hover:shadow-violet-500/30 transition-all"
                 >
-                  {language === 'ar' ? 'ابدأ مجاناً' : 'Start Free'}
-                  <ArrowRight size={20} weight="bold" className={isRTL ? 'rotate-180' : ''} />
+                  {language === 'ar' ? 'ابدأ مجاناً' : 'Get Started Free'}
+                  <ArrowRight size={20} weight="bold" className={`transition-transform group-hover:translate-x-1 ${isRTL ? 'rotate-180 group-hover:-translate-x-1' : ''}`} />
                 </Link>
                 
-                <button className="inline-flex items-center gap-2 px-6 py-3 bg-white text-slate-700 font-semibold rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
-                  <Play size={20} weight="fill" />
-                  {language === 'ar' ? 'شاهد الفيديو' : 'Watch Demo'}
+                <button className="inline-flex items-center gap-2 px-7 py-4 bg-white text-slate-700 font-semibold rounded-full border border-slate-200 hover:border-slate-300 hover:shadow-lg transition-all">
+                  <Play size={20} weight="fill" className="text-violet-600" />
+                  {language === 'ar' ? 'شاهد العرض' : 'Try Demo'}
                 </button>
               </div>
               
-              {/* Trust badges */}
-              <div className="mt-10 flex items-center gap-6">
-                <div className="flex -space-x-2">
-                  {[1,2,3,4,5].map(i => (
-                    <div key={i} className="w-8 h-8 rounded-full bg-slate-200 border-2 border-white" />
-                  ))}
-                </div>
-                <div>
-                  <div className="flex items-center gap-1">
-                    {[1,2,3,4,5].map(i => (
-                      <Star key={i} size={16} className="text-yellow-500" weight="fill" />
-                    ))}
-                  </div>
-                  <p className="text-sm text-slate-600">
-                    {language === 'ar' ? '+10,000 مستخدم سعيد' : '10,000+ Happy Users'}
-                  </p>
-                </div>
+              {/* Feature Tags */}
+              <div className="flex flex-wrap gap-3">
+                {features.map((feature, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.3 + index * 0.1 }}
+                    className={`inline-flex items-center gap-2 px-4 py-2 ${feature.bg} rounded-full`}
+                  >
+                    <feature.icon size={18} className={feature.color} weight="fill" />
+                    <span className="text-sm font-medium text-slate-700">{feature.title}</span>
+                  </motion.div>
+                ))}
               </div>
             </motion.div>
             
-            {/* Hero Image/Demo */}
+            {/* Right - Hero Visual */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="relative"
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className={`relative ${isRTL ? 'lg:order-1' : ''}`}
             >
-              <div className="bg-slate-100 rounded-2xl p-4 shadow-2xl">
-                <img
-                  src="https://static.prod-images.emergentagent.com/jobs/9d301dcd-e3e4-482d-9d3a-1c2d6b41093f/images/dd0db0f9b8f8070012fd71ed7d86b5bf320357e1ab28149f982806de691b7953.png"
-                  alt="Letsm AI Dashboard"
-                  className="rounded-lg w-full"
-                />
+              {/* Main Image Container */}
+              <div className="relative">
+                <div className="bg-gradient-to-br from-slate-100 to-slate-50 rounded-3xl p-6 shadow-2xl shadow-slate-200/50">
+                  <img
+                    src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=800&q=80"
+                    alt="Person using Letsm AI"
+                    className="rounded-2xl w-full object-cover h-[400px]"
+                  />
+                  
+                  {/* Overlay Chat Interface */}
+                  <div className="absolute inset-6 rounded-2xl bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                </div>
+                
+                {/* Floating Chat Bubbles */}
+                <motion.div
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.6 }}
+                  className={`absolute ${isRTL ? '-right-4' : '-left-4'} top-20 bg-white rounded-2xl shadow-xl p-4 max-w-[220px] border border-slate-100`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-violet-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <ChatTeardrop size={16} className="text-violet-600" weight="fill" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        {language === 'ar' ? '"ذكرني بالاجتماع غداً"' : '"Remind me about the meeting tomorrow"'}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {language === 'ar' ? 'تم إنشاء التذكير ✓' : 'Reminder created ✓'}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.8 }}
+                  className={`absolute ${isRTL ? '-left-4' : '-right-4'} top-1/2 bg-white rounded-2xl shadow-xl p-4 border border-slate-100`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                      <Check size={20} className="text-green-600" weight="bold" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">98%</p>
+                      <p className="text-xs text-slate-500">{language === 'ar' ? 'دقة الفهم' : 'Accuracy'}</p>
+                    </div>
+                  </div>
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 1 }}
+                  className={`absolute ${isRTL ? 'left-10' : 'right-10'} -bottom-6 bg-white rounded-2xl shadow-xl p-4 border border-slate-100`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <Calendar size={20} className="text-blue-600" weight="fill" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">{language === 'ar' ? 'اجتماع الفريق' : 'Team Meeting'}</p>
+                      <p className="text-xs text-slate-500">{language === 'ar' ? 'تمت المزامنة' : 'Synced'}</p>
+                    </div>
+                  </div>
+                </motion.div>
               </div>
-              
-              {/* Floating cards */}
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className={`absolute -${isRTL ? 'right' : 'left'}-4 top-1/4 bg-white rounded-lg shadow-lg p-4 border border-slate-200`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                    <CheckCircle size={20} className="text-green-600" weight="fill" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">
-                      {language === 'ar' ? 'مهمة مكتملة!' : 'Task Completed!'}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {language === 'ar' ? 'اتصل بالعميل' : 'Call the client'}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-              
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.6 }}
-                className={`absolute -${isRTL ? 'left' : 'right'}-4 bottom-1/4 bg-white rounded-lg shadow-lg p-4 border border-slate-200`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#002FA7]/10 rounded-full flex items-center justify-center">
-                    <Bell size={20} className="text-[#002FA7]" weight="fill" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">
-                      {language === 'ar' ? 'تذكير: اجتماع' : 'Reminder: Meeting'}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {language === 'ar' ? 'بعد 15 دقيقة' : 'In 15 minutes'}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
             </motion.div>
           </div>
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-slate-50">
+      <section className="py-16 bg-white border-y border-slate-100">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
+            {[
+              { value: '10K+', label: language === 'ar' ? 'مستخدم نشط' : 'Active Users' },
+              { value: '500K+', label: language === 'ar' ? 'مهمة مكتملة' : 'Tasks Done' },
+              { value: '98%', label: language === 'ar' ? 'رضا المستخدمين' : 'Satisfaction' },
+              { value: '24/7', label: language === 'ar' ? 'متاح دائماً' : 'Available' },
+            ].map((stat, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
@@ -286,8 +341,10 @@ const Landing = () => {
                 viewport={{ once: true }}
                 className="text-center"
               >
-                <p className="text-3xl md:text-4xl font-bold text-[#002FA7] font-heading">{stat.value}</p>
-                <p className="text-slate-600 mt-1">{stat.label}</p>
+                <p className="text-4xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent font-heading">
+                  {stat.value}
+                </p>
+                <p className="text-slate-600 mt-2 font-medium">{stat.label}</p>
               </motion.div>
             ))}
           </div>
@@ -295,34 +352,41 @@ const Landing = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-6">
-        <div className="max-w-7xl mx-auto">
+      <section id="features" className="py-24 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 font-heading mb-4">
-              {language === 'ar' ? 'كل ما تحتاجه في مكان واحد' : 'Everything You Need in One Place'}
-            </h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              {language === 'ar'
-                ? 'أدوات ذكية لإدارة وقتك ومهامك بكفاءة عالية'
-                : 'Smart tools to manage your time and tasks efficiently'}
-            </p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-4xl sm:text-5xl font-bold text-slate-900 font-heading mb-4">
+                {language === 'ar' ? 'كل ما تحتاجه' : 'Everything You Need'}
+              </h2>
+              <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+                {language === 'ar'
+                  ? 'أدوات ذكية مصممة لتبسيط حياتك اليومية'
+                  : 'Smart tools designed to simplify your daily life'}
+              </p>
+            </motion.div>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
+          <div className="grid md:grid-cols-2 gap-8">
+            {detailedFeatures.map((feature, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white p-6 rounded-xl border border-slate-200 hover:border-[#002FA7]/30 hover:shadow-lg transition-all"
+                className="bg-white p-8 rounded-2xl border border-slate-200 hover:border-violet-200 hover:shadow-xl hover:shadow-violet-500/5 transition-all group"
               >
-                <div className="w-12 h-12 bg-[#002FA7]/10 rounded-lg flex items-center justify-center mb-4">
-                  <feature.icon size={24} className="text-[#002FA7]" weight="duotone" />
+                <div className="w-14 h-14 bg-gradient-to-br from-violet-100 to-indigo-100 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <feature.icon size={28} className="text-violet-600" weight="duotone" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">{feature.title}</h3>
-                <p className="text-slate-600">{feature.description}</p>
+                <h3 className="text-xl font-semibold text-slate-900 mb-3">{feature.title}</h3>
+                <p className="text-slate-600 leading-relaxed">{feature.description}</p>
               </motion.div>
             ))}
           </div>
@@ -330,17 +394,24 @@ const Landing = () => {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 px-6 bg-slate-50">
-        <div className="max-w-7xl mx-auto">
+      <section id="pricing" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 font-heading mb-4">
-              {language === 'ar' ? 'خطط تناسب الجميع' : 'Plans for Everyone'}
-            </h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              {language === 'ar'
-                ? 'ابدأ مجاناً وارتقِ عندما تحتاج المزيد'
-                : 'Start free and upgrade when you need more'}
-            </p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-4xl sm:text-5xl font-bold text-slate-900 font-heading mb-4">
+                {language === 'ar' ? 'خطط مرنة' : 'Flexible Plans'}
+              </h2>
+              <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+                {language === 'ar'
+                  ? 'ابدأ مجاناً وارتقِ عندما تحتاج المزيد'
+                  : 'Start free and upgrade as you grow'}
+              </p>
+            </motion.div>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
@@ -351,38 +422,52 @@ const Landing = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className={`bg-white rounded-2xl p-8 ${
+                className={`relative rounded-3xl p-8 ${
                   plan.highlighted 
-                    ? 'border-2 border-[#002FA7] shadow-xl relative' 
-                    : 'border border-slate-200'
+                    ? 'bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-2xl shadow-violet-500/30 scale-105' 
+                    : 'bg-white border border-slate-200'
                 }`}
               >
                 {plan.highlighted && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#002FA7] text-white text-sm font-semibold rounded-full">
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-white text-violet-600 text-sm font-bold rounded-full shadow-lg">
                     {language === 'ar' ? 'الأكثر شعبية' : 'Most Popular'}
                   </div>
                 )}
                 
-                <h3 className="text-xl font-semibold text-slate-900 mb-2">{plan.name}</h3>
+                <h3 className={`text-xl font-semibold mb-2 ${plan.highlighted ? 'text-white' : 'text-slate-900'}`}>
+                  {plan.name}
+                </h3>
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-4xl font-bold text-slate-900">{plan.price}</span>
-                  <span className="text-slate-500">{plan.period}</span>
+                  <span className={`text-5xl font-bold ${plan.highlighted ? 'text-white' : 'text-slate-900'}`}>
+                    {plan.price}
+                  </span>
+                  {plan.period && (
+                    <span className={plan.highlighted ? 'text-white/70' : 'text-slate-500'}>
+                      {plan.period}
+                    </span>
+                  )}
                 </div>
                 
-                <ul className="space-y-3 mb-8">
+                <ul className="space-y-4 mb-8">
                   {plan.features.map((feature, i) => (
                     <li key={i} className="flex items-center gap-3">
-                      <CheckCircle size={20} className="text-green-500" weight="fill" />
-                      <span className="text-slate-600">{feature}</span>
+                      <CheckCircle 
+                        size={20} 
+                        weight="fill"
+                        className={plan.highlighted ? 'text-white' : 'text-green-500'} 
+                      />
+                      <span className={plan.highlighted ? 'text-white/90' : 'text-slate-600'}>
+                        {feature}
+                      </span>
                     </li>
                   ))}
                 </ul>
                 
                 <Link
                   to="/login"
-                  className={`block w-full py-3 text-center font-semibold rounded-lg transition-colors ${
+                  className={`block w-full py-4 text-center font-semibold rounded-full transition-all ${
                     plan.highlighted
-                      ? 'bg-[#002FA7] text-white hover:bg-[#001A7A]'
+                      ? 'bg-white text-violet-600 hover:shadow-lg'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
@@ -395,27 +480,29 @@ const Landing = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-6">
-        <div className="max-w-4xl mx-auto text-center">
+      <section className="py-24 bg-gradient-to-br from-violet-600 to-indigo-600 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMtOS45NDEgMC0xOCA4LjA1OS0xOCAxOHM4LjA1OSAxOCAxOCAxOGMxMC44NzUgMCAxOC03LjYyNSAxOC0xOHMtNy4xMjUtMTgtMTgtMTh6IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9nPjwvc3ZnPg==')] opacity-30"></div>
+        
+        <div className="relative max-w-4xl mx-auto px-6 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 font-heading mb-4">
-              {language === 'ar' ? 'ابدأ إنتاجيتك اليوم' : 'Start Your Productivity Today'}
+            <h2 className="text-4xl sm:text-5xl font-bold text-white font-heading mb-6">
+              {language === 'ar' ? 'ابدأ رحلة الإنتاجية اليوم' : 'Start Your Productivity Journey'}
             </h2>
-            <p className="text-lg text-slate-600 mb-8">
+            <p className="text-xl text-white/80 mb-10 max-w-2xl mx-auto">
               {language === 'ar'
-                ? 'انضم لآلاف المستخدمين الذين يديرون حياتهم بذكاء'
-                : 'Join thousands of users managing their lives smartly'}
+                ? 'انضم لآلاف المستخدمين الذين يديرون حياتهم بذكاء مع Letsm AI'
+                : 'Join thousands of users managing their lives smartly with Letsm AI'}
             </p>
             <Link
               to="/login"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-[#002FA7] text-white font-semibold text-lg rounded-lg hover:bg-[#001A7A] transition-colors"
+              className="inline-flex items-center gap-3 px-10 py-5 bg-white text-violet-600 font-bold text-lg rounded-full hover:shadow-2xl transition-all"
             >
-              {language === 'ar' ? 'ابدأ مجاناً الآن' : 'Start Free Now'}
+              {language === 'ar' ? 'ابدأ مجاناً الآن' : 'Get Started Free'}
               <ArrowRight size={24} weight="bold" className={isRTL ? 'rotate-180' : ''} />
             </Link>
           </motion.div>
@@ -423,19 +510,17 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-6 bg-slate-900 text-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+      <footer className="py-16 bg-slate-900">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="flex items-center gap-3">
-              <img
-                src="https://static.prod-images.emergentagent.com/jobs/9d301dcd-e3e4-482d-9d3a-1c2d6b41093f/images/7432755b702d2a2a26f7a6ef3b6c0c1c2e834acae24098a23273963d9cd5719c.png"
-                alt="Letsm AI"
-                className="h-8 w-auto brightness-0 invert"
-              />
-              <span className="font-bold text-lg font-heading">Letsm AI</span>
+              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-indigo-500 rounded-xl flex items-center justify-center">
+                <Sparkle size={22} className="text-white" weight="fill" />
+              </div>
+              <span className="font-bold text-xl text-white font-heading">Letsm AI</span>
             </div>
             
-            <div className="flex items-center gap-6 text-slate-400">
+            <div className="flex items-center gap-8 text-slate-400">
               <a href="#" className="hover:text-white transition-colors">
                 {language === 'ar' ? 'الخصوصية' : 'Privacy'}
               </a>
@@ -443,11 +528,14 @@ const Landing = () => {
                 {language === 'ar' ? 'الشروط' : 'Terms'}
               </a>
               <a href="#" className="hover:text-white transition-colors">
-                {language === 'ar' ? 'تواصل معنا' : 'Contact'}
+                {language === 'ar' ? 'الدعم' : 'Support'}
+              </a>
+              <a href="#" className="hover:text-white transition-colors">
+                {language === 'ar' ? 'تواصل' : 'Contact'}
               </a>
             </div>
             
-            <p className="text-slate-400 text-sm">
+            <p className="text-slate-500 text-sm">
               © 2026 Letsm AI. {language === 'ar' ? 'جميع الحقوق محفوظة' : 'All rights reserved.'}
             </p>
           </div>

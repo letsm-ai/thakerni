@@ -16,6 +16,7 @@ import bcrypt
 import jwt
 import httpx
 from emergentintegrations.llm.chat import LlmChat, UserMessage
+from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -32,6 +33,34 @@ JWT_EXPIRATION_HOURS = 24 * 7  # 7 days
 
 # Emergent LLM Key
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
+
+# Stripe Config
+STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
+
+# Subscription Plans (prices managed server-side only)
+SUBSCRIPTION_PLANS = {
+    "free": {
+        "name": "Free",
+        "price": 0.00,
+        "currency": "usd",
+        "features": ["5 Active Tasks", "3 Conversations/day", "Basic Reminders", "Email Support"],
+        "limits": {"max_tasks": 5, "max_conversations_daily": 3}
+    },
+    "pro": {
+        "name": "Pro",
+        "price": 9.99,
+        "currency": "usd",
+        "features": ["Unlimited Tasks", "Unlimited Conversations", "Voice Input", "Advanced Analytics", "Priority Support"],
+        "limits": {"max_tasks": -1, "max_conversations_daily": -1}
+    },
+    "business": {
+        "name": "Business",
+        "price": 29.99,
+        "currency": "usd",
+        "features": ["All Pro Features", "WhatsApp Integration", "Team up to 10", "Custom API", "Account Manager"],
+        "limits": {"max_tasks": -1, "max_conversations_daily": -1}
+    }
+}
 
 app = FastAPI(title="Letsm AI - AI Assistant Platform")
 api_router = APIRouter(prefix="/api")
@@ -1357,6 +1386,183 @@ async def get_streaks(user: dict = Depends(get_current_user)):
         "streak_unit": "days"
     }
 
+# ==================== STRIPE / SUBSCRIPTIONS ====================
+
+class CheckoutRequest(BaseModel):
+    plan_id: str
+    origin_url: str
+
+@api_router.get("/subscription/plans")
+async def get_subscription_plans():
+    """Get available subscription plans"""
+    plans = []
+    for plan_id, plan in SUBSCRIPTION_PLANS.items():
+        plans.append({
+            "plan_id": plan_id,
+            "name": plan["name"],
+            "price": plan["price"],
+            "currency": plan["currency"],
+            "features": plan["features"]
+        })
+    return {"plans": plans}
+
+@api_router.get("/subscription/status")
+async def get_subscription_status(user: dict = Depends(get_current_user)):
+    """Get current user subscription status"""
+    user_id = user["user_id"]
+    user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    subscription = user_doc.get("subscription", "free")
+    plan = SUBSCRIPTION_PLANS.get(subscription, SUBSCRIPTION_PLANS["free"])
+    return {
+        "plan_id": subscription,
+        "plan_name": plan["name"],
+        "price": plan["price"],
+        "features": plan["features"],
+        "limits": plan["limits"]
+    }
+
+@api_router.post("/subscription/checkout")
+async def create_checkout_session(request: Request, body: CheckoutRequest, user: dict = Depends(get_current_user)):
+    """Create a Stripe checkout session for subscription"""
+    plan_id = body.plan_id
+    origin_url = body.origin_url
+
+    if plan_id not in SUBSCRIPTION_PLANS:
+        raise HTTPException(status_code=400, detail="Invalid plan")
+
+    plan = SUBSCRIPTION_PLANS[plan_id]
+    if plan["price"] <= 0:
+        raise HTTPException(status_code=400, detail="Free plan doesn't require payment")
+
+    host_url = str(request.base_url).rstrip("/")
+    webhook_url = f"{host_url}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+
+    success_url = f"{origin_url}/dashboard/subscription/success?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{origin_url}/dashboard/profile"
+
+    metadata = {
+        "user_id": user["user_id"],
+        "plan_id": plan_id,
+        "user_email": user["email"]
+    }
+
+    checkout_request = CheckoutSessionRequest(
+        amount=plan["price"],
+        currency=plan["currency"],
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata=metadata
+    )
+
+    session = await stripe_checkout.create_checkout_session(checkout_request)
+
+    # Create payment transaction record
+    transaction = {
+        "transaction_id": f"txn_{uuid.uuid4().hex[:12]}",
+        "session_id": session.session_id,
+        "user_id": user["user_id"],
+        "email": user["email"],
+        "plan_id": plan_id,
+        "amount": plan["price"],
+        "currency": plan["currency"],
+        "payment_status": "initiated",
+        "status": "pending",
+        "metadata": metadata,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.payment_transactions.insert_one(transaction)
+
+    return {"url": session.url, "session_id": session.session_id}
+
+@api_router.get("/subscription/checkout/status/{session_id}")
+async def get_checkout_status(session_id: str, request: Request, user: dict = Depends(get_current_user)):
+    """Check status of a checkout session and update subscription if paid"""
+    host_url = str(request.base_url).rstrip("/")
+    webhook_url = f"{host_url}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+
+    checkout_status = await stripe_checkout.get_checkout_status(session_id)
+
+    # Find the transaction
+    transaction = await db.payment_transactions.find_one(
+        {"session_id": session_id},
+        {"_id": 0}
+    )
+
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    # Update transaction status
+    update_data = {
+        "payment_status": checkout_status.payment_status,
+        "status": checkout_status.status,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+
+    # If paid and not already processed, upgrade user
+    if checkout_status.payment_status == "paid" and transaction.get("payment_status") != "paid":
+        plan_id = transaction.get("plan_id") or checkout_status.metadata.get("plan_id", "pro")
+        await db.users.update_one(
+            {"user_id": transaction["user_id"]},
+            {"$set": {"subscription": plan_id, "subscription_updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        update_data["processed"] = True
+        logger.info(f"User {transaction['user_id']} upgraded to {plan_id}")
+
+    await db.payment_transactions.update_one(
+        {"session_id": session_id},
+        {"$set": update_data}
+    )
+
+    return {
+        "status": checkout_status.status,
+        "payment_status": checkout_status.payment_status,
+        "amount_total": checkout_status.amount_total,
+        "currency": checkout_status.currency,
+        "plan_id": transaction.get("plan_id")
+    }
+
+@api_router.post("/webhook/stripe")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhook events"""
+    try:
+        body = await request.body()
+        signature = request.headers.get("Stripe-Signature")
+
+        host_url = str(request.base_url).rstrip("/")
+        webhook_url = f"{host_url}/api/webhook/stripe"
+        stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+
+        webhook_response = await stripe_checkout.handle_webhook(body, signature)
+
+        if webhook_response.payment_status == "paid":
+            transaction = await db.payment_transactions.find_one(
+                {"session_id": webhook_response.session_id},
+                {"_id": 0}
+            )
+            if transaction and transaction.get("payment_status") != "paid":
+                plan_id = transaction.get("plan_id", "pro")
+                await db.users.update_one(
+                    {"user_id": transaction["user_id"]},
+                    {"$set": {"subscription": plan_id, "subscription_updated_at": datetime.now(timezone.utc).isoformat()}}
+                )
+                await db.payment_transactions.update_one(
+                    {"session_id": webhook_response.session_id},
+                    {"$set": {
+                        "payment_status": "paid",
+                        "status": "complete",
+                        "processed": True,
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
+                logger.info(f"Webhook: User {transaction['user_id']} upgraded to {plan_id}")
+
+        return {"received": True}
+    except Exception as e:
+        logger.error(f"Webhook error: {str(e)}")
+        return {"received": True, "error": str(e)}
+
 # ==================== WHATSAPP PROXY ====================
 
 WHATSAPP_SERVICE_URL = "http://localhost:3001"
@@ -1398,6 +1604,17 @@ async def send_whatsapp_message(request: Request, user: dict = Depends(get_curre
     except Exception as e:
         logger.error(f"WhatsApp send error: {str(e)}")
         return {"success": False, "error": str(e)}
+
+@api_router.post("/whatsapp/connect")
+async def connect_whatsapp(user: dict = Depends(get_current_user)):
+    """Trigger a new WhatsApp connection and QR code generation"""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(f"{WHATSAPP_SERVICE_URL}/connect", timeout=15.0)
+            return response.json()
+    except Exception as e:
+        logger.error(f"WhatsApp connect error: {str(e)}")
+        return {"success": False, "error": "WhatsApp service unavailable"}
 
 @api_router.post("/whatsapp/disconnect")
 async def disconnect_whatsapp(user: dict = Depends(get_current_user)):
