@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import FloatingChat from '../components/FloatingChat';
@@ -7,7 +7,7 @@ import {
   Star, Lightning, Globe, CheckCircle, Clock, Sparkle, Microphone,
   WhatsappLogo, TelegramLogo, ChatCircle, Lock, Eye, UserCheck,
   FileText, PaperPlaneTilt, CaretRight, X, ChartBar, Lightbulb,
-  ArrowsClockwise, BellSimple, Translate, Image, List
+  ArrowsClockwise, BellSimple, Translate, Image, List, ArrowUp
 } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
 
@@ -139,6 +139,24 @@ const Landing = () => {
   ];
   const [openFaq, setOpenFaq] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowBackToTop(window.scrollY > 600);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const smoothScroll = useCallback((e, id) => {
+    e.preventDefault();
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setMobileMenuOpen(false);
+  }, []);
 
   // ── Messaging / Calendar integrations ──
   const messaging = [
@@ -174,10 +192,10 @@ const Landing = () => {
             <span className="font-bold text-lg text-gray-900">Letsm <span className="text-violet-600">AI</span></span>
           </Link>
           <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-gray-500 hover:text-gray-900 text-sm font-medium transition-colors">{t('Features', 'المميزات')}</a>
-            <a href="#demo" className="text-gray-500 hover:text-gray-900 text-sm font-medium transition-colors">{t('Demo', 'تجربة')}</a>
-            <a href="#pricing" className="text-gray-500 hover:text-gray-900 text-sm font-medium transition-colors">{t('Pricing', 'الأسعار')}</a>
-            <a href="#privacy" className="text-gray-500 hover:text-gray-900 text-sm font-medium transition-colors">{t('Privacy', 'الخصوصية')}</a>
+            <a href="#features" onClick={(e) => smoothScroll(e, 'features')} className="text-gray-500 hover:text-gray-900 text-sm font-medium transition-colors">{t('Features', 'المميزات')}</a>
+            <a href="#demo" onClick={(e) => smoothScroll(e, 'demo')} className="text-gray-500 hover:text-gray-900 text-sm font-medium transition-colors">{t('Demo', 'تجربة')}</a>
+            <a href="#pricing" onClick={(e) => smoothScroll(e, 'pricing')} className="text-gray-500 hover:text-gray-900 text-sm font-medium transition-colors">{t('Pricing', 'الأسعار')}</a>
+            <a href="#privacy" onClick={(e) => smoothScroll(e, 'privacy')} className="text-gray-500 hover:text-gray-900 text-sm font-medium transition-colors">{t('Privacy', 'الخصوصية')}</a>
             <Link to="/login" className="text-gray-500 hover:text-gray-900 text-sm font-medium transition-colors">{t('Sign In', 'دخول')}</Link>
           </div>
           <div className="flex items-center gap-3">
@@ -193,10 +211,10 @@ const Landing = () => {
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
             className="md:hidden bg-white/95 backdrop-blur-lg border-t border-gray-100 px-6 pb-6 pt-3" data-testid="mobile-menu">
             <div className="flex flex-col gap-1">
-              <a href="#features" onClick={() => setMobileMenuOpen(false)} className="py-3 text-gray-700 font-medium text-base border-b border-gray-50">{t('Features', 'المميزات')}</a>
-              <a href="#demo" onClick={() => setMobileMenuOpen(false)} className="py-3 text-gray-700 font-medium text-base border-b border-gray-50">{t('Demo', 'تجربة')}</a>
-              <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="py-3 text-gray-700 font-medium text-base border-b border-gray-50">{t('Pricing', 'الأسعار')}</a>
-              <a href="#privacy" onClick={() => setMobileMenuOpen(false)} className="py-3 text-gray-700 font-medium text-base border-b border-gray-50">{t('Privacy', 'الخصوصية')}</a>
+              <a href="#features" onClick={(e) => smoothScroll(e, 'features')} className="py-3 text-gray-700 font-medium text-base border-b border-gray-50">{t('Features', 'المميزات')}</a>
+              <a href="#demo" onClick={(e) => smoothScroll(e, 'demo')} className="py-3 text-gray-700 font-medium text-base border-b border-gray-50">{t('Demo', 'تجربة')}</a>
+              <a href="#pricing" onClick={(e) => smoothScroll(e, 'pricing')} className="py-3 text-gray-700 font-medium text-base border-b border-gray-50">{t('Pricing', 'الأسعار')}</a>
+              <a href="#privacy" onClick={(e) => smoothScroll(e, 'privacy')} className="py-3 text-gray-700 font-medium text-base border-b border-gray-50">{t('Privacy', 'الخصوصية')}</a>
               <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="py-3 text-gray-700 font-medium text-base border-b border-gray-50">{t('Sign In', 'دخول')}</Link>
               <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="mt-3 bg-violet-600 text-white text-center font-medium py-3 rounded-full hover:bg-violet-700 transition-colors" data-testid="mobile-get-started-btn">{t('Get Started Free', 'ابدأ مجاناً')}</Link>
             </div>
@@ -223,7 +241,7 @@ const Landing = () => {
                 <Link to="/login" className="bg-violet-600 text-white font-medium px-8 py-3.5 rounded-full hover:bg-violet-700 transition-colors inline-flex items-center gap-2" data-testid="hero-cta">
                   {t('Get Started Free', 'ابدأ مجاناً')} <ArrowRight size={18} className={isRTL ? 'rotate-180' : ''} />
                 </Link>
-                <a href="#demo" className="bg-white text-gray-700 font-medium px-8 py-3.5 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors inline-flex items-center gap-2" data-testid="watch-demo-button">
+                <a href="#demo" onClick={(e) => smoothScroll(e, 'demo')} className="bg-white text-gray-700 font-medium px-8 py-3.5 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors inline-flex items-center gap-2" data-testid="watch-demo-button">
                   <Play size={18} className="text-violet-600" weight="fill" /> {t('Try Demo', 'جرّب التجربة')}
                 </a>
               </div>
@@ -522,6 +540,21 @@ const Landing = () => {
           <p className="text-sm text-gray-400">2026 Letsm AI</p>
         </div>
       </footer>
+
+      {/* ── BACK TO TOP ── */}
+      {showBackToTop && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          onClick={scrollToTop}
+          className={`fixed ${isRTL ? 'left-6' : 'right-6'} bottom-24 z-40 w-11 h-11 bg-violet-600 text-white rounded-full flex items-center justify-center hover:bg-violet-700 transition-colors border-2 border-white`}
+          data-testid="back-to-top-button"
+          aria-label="Back to top"
+        >
+          <ArrowUp size={20} weight="bold" />
+        </motion.button>
+      )}
 
       <FloatingChat language={language} isRTL={isRTL} />
     </div>
