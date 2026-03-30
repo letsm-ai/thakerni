@@ -6,6 +6,16 @@ import axios from 'axios';
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 const STORAGE_KEY = 'letsm_guest_chat';
 
+const renderMd = (text) => {
+  if (!text) return text;
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) =>
+    part.startsWith('**') && part.endsWith('**')
+      ? <strong key={i}>{part.slice(2, -2)}</strong>
+      : part
+  );
+};
+
 const loadSaved = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -141,7 +151,7 @@ const FloatingChat = ({ language, isRTL }) => {
                     ? 'bg-gradient-to-r from-violet-600 to-indigo-500 text-white rounded-tr-sm'
                     : 'bg-white text-slate-800 shadow-sm border border-slate-100 rounded-tl-sm'
                 }`}>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap" dir="auto">{msg.role === 'ai' ? renderMd(msg.content) : msg.content}</p>
                 </div>
               </div>
             ))}

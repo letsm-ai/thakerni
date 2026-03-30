@@ -7,6 +7,16 @@ import { toast } from 'sonner';
 // Speech Recognition setup
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
+const renderMd = (text) => {
+  if (!text) return text;
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) =>
+    part.startsWith('**') && part.endsWith('**')
+      ? <strong key={i}>{part.slice(2, -2)}</strong>
+      : part
+  );
+};
+
 const Chat = () => {
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
@@ -292,7 +302,7 @@ const Chat = () => {
                     }`}
                     data-testid={`message-${msg.message_id}`}
                   >
-                    <p className="text-slate-700 whitespace-pre-wrap">{msg.content}</p>
+                    <p className="text-slate-700 whitespace-pre-wrap" dir="auto">{msg.role === 'assistant' ? renderMd(msg.content) : msg.content}</p>
                     <span className="text-xs text-slate-400 mt-2 block">
                       {formatTime(msg.created_at)}
                     </span>

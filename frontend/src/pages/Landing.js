@@ -15,6 +15,17 @@ const Landing = () => {
   const { language, toggleLanguage, isRTL } = useLanguage();
   const t = useCallback((en, ar) => language === 'ar' ? ar : en, [language]);
 
+  // Simple markdown: **bold** → <strong>
+  const renderMd = (text) => {
+    if (!text) return text;
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) =>
+      part.startsWith('**') && part.endsWith('**')
+        ? <strong key={i}>{part.slice(2, -2)}</strong>
+        : part
+    );
+  };
+
   // ── Feature pills for hero ──
   const heroPills = [
     { icon: ChatTeardrop, label: t('Natural Language', 'لغة طبيعية'), cls: 'bg-purple-50 text-purple-600 border-purple-200' },
@@ -82,14 +93,21 @@ const Landing = () => {
   ];
 
   // ── Chat Demo State ──
+  const welcomeMsg = t("Hi! I'm Letsm AI. Try saying something like \"Remind me to send the report after lunch\" or click the examples below.", 'مرحباً! أنا Letsm AI. جرّب قول "ذكرني بإرسال التقرير بعد الغداء" أو اضغط الأمثلة أدناه.');
   const [demoMessages, setDemoMessages] = useState([
-    { id: 1, type: 'ai', content: t("Hi! I'm Letsm AI. Try saying something like \"Remind me to send the report after lunch\" or click the examples below.", 'مرحباً! أنا Letsm AI. جرّب قول "ذكرني بإرسال التقرير بعد الغداء" أو اضغط الأمثلة أدناه.') },
+    { id: 1, type: 'ai', content: welcomeMsg },
   ]);
   const [isTyping, setIsTyping] = useState(false);
   const [activeScenario, setActiveScenario] = useState(null);
   const [demoInput, setDemoInput] = useState('');
   const [demoSessionId, setDemoSessionId] = useState(null);
   const demoChatRef = useRef(null);
+
+  // Reset demo messages when language changes
+  useEffect(() => {
+    setDemoMessages([{ id: 1, type: 'ai', content: welcomeMsg }]);
+    setDemoSessionId(null);
+  }, [language]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const demoScenarios = [
     { label: t('Set a Reminder', 'تعيين تذكير'), icon: Clock, user: t('Remind me to send the report after lunch', 'ذكرني بإرسال التقرير بعد الغداء'), ai: t('Sure! Would 2pm work for you?', 'بالتأكيد! هل الساعة 2 ظهراً مناسبة؟'), follow: t('Yes', 'نعم'), final: t("Done! I'll remind you at 2pm today.", 'تم! سأذكرك الساعة 2 ظهراً اليوم.'), action: t('Reminder set for 2:00 PM', 'تم تعيين التذكير للساعة 2:00 مساءً') },
@@ -360,7 +378,7 @@ const Landing = () => {
                         <span className="text-sm font-medium text-emerald-800">{msg.content}</span>
                       </div>
                     ) : (
-                      <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.type === 'user' ? 'bg-violet-600 text-white rounded-tr-sm' : 'bg-gray-100 text-gray-800 rounded-tl-sm'}`}>{msg.content}</div>
+                      <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.type === 'user' ? 'bg-violet-600 text-white rounded-tr-sm' : 'bg-gray-100 text-gray-800 rounded-tl-sm'}`} dir="auto">{msg.type === 'ai' ? renderMd(msg.content) : msg.content}</div>
                     )}
                   </div>
                 ))}
@@ -401,7 +419,7 @@ const Landing = () => {
                 <div className="space-y-3">
                   {conv.messages.map((m, mi) => (
                     <div key={mi} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${m.role === 'user' ? 'bg-violet-600 text-white rounded-tr-sm' : 'bg-gray-100 text-gray-800 rounded-tl-sm'}`}>{m.text}</div>
+                      <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${m.role === 'user' ? 'bg-violet-600 text-white rounded-tr-sm' : 'bg-gray-100 text-gray-800 rounded-tl-sm'}`} dir="auto">{m.text}</div>
                     </div>
                   ))}
                 </div>
