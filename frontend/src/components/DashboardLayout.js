@@ -83,12 +83,23 @@ const NotificationBell = () => {
         notificationsApi.getNotifications(),
         notificationsApi.getUnreadCount()
       ]);
-      setNotifications(notifRes.data.slice(0, 10));
+      const newNotifs = notifRes.data.slice(0, 10);
+      
+      // Browser notification for new team events
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && unreadCount > 0) {
+        const newTeamNotifs = newNotifs.filter(n => !n.read && n.type?.startsWith('team') && !notifications.find(o => o.notification_id === n.notification_id));
+        if (newTeamNotifs.length > 0) {
+          const latest = newTeamNotifs[0];
+          new Notification(latest.title, { body: latest.message, icon: '/favicon.ico' });
+        }
+      }
+      
+      setNotifications(newNotifs);
       setUnreadCount(countRes.data.count);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }
-  }, []);
+  }, [unreadCount, notifications]);
 
   const checkReminders = useCallback(async () => {
     try {
@@ -206,7 +217,12 @@ const NotificationBell = () => {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900">{notif.title}</p>
+                    <div className="flex items-center gap-1.5">
+                      {notif.type?.startsWith('team') && (
+                        <span className="text-xs bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded font-medium">Team</span>
+                      )}
+                      <p className="text-sm font-medium text-slate-900">{notif.title}</p>
+                    </div>
                     <p className="text-sm text-slate-600 truncate">{notif.message}</p>
                     <p className="text-xs text-slate-400 mt-1">{formatTime(notif.created_at)}</p>
                   </div>

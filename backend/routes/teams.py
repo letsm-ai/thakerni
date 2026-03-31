@@ -21,6 +21,31 @@ async def _get_user(request: Request):
     return await get_current_user(request, credentials)
 
 
+async def _notify(db, user_id: str, title: str, message: str, notif_type: str = "team", related_id: str = None):
+    """Create a notification for a user."""
+    await db.notifications.insert_one({
+        "notification_id": f"notif_{uuid.uuid4().hex[:12]}",
+        "user_id": user_id,
+        "title": title,
+        "message": message,
+        "type": notif_type,
+        "read": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "related_id": related_id
+    })
+
+
+async def _notify_team(db, team_id: str, title: str, message: str, exclude_user: str = None, notif_type: str = "team", related_id: str = None):
+    """Send a notification to all active team members except the excluded user."""
+    members = await db.team_members.find(
+        {"team_id": team_id, "status": "active"},
+        {"_id": 0, "user_id": 1}
+    ).to_list(50)
+    for m in members:
+        if m["user_id"] and m["user_id"] != exclude_user:
+            await _notify(db, m["user_id"], title, message, notif_type, related_id)
+
+
 # ── Models ──
 
 class TeamCreate(BaseModel):
@@ -202,6 +227,14 @@ async def invite_member(data: InviteCreate, user: dict = Depends(_get_user)):
     }
     await db.team_members.insert_one(invite_doc)
 
+    # Notify the invited user if they have an account
+    if invited_user:
+        team = await db.teams.find_one({"team_id": mem["team_id"]}, {"_id": 0, "name": 1})
+        await _notify(db, invited_user["user_id"],
+            "Team Invitation",
+            f"You've been invited to join '{team['name']}' as {data.role}.",
+            "team_invite", invite_doc["invite_id"])
+
     return {"success": True, "message": f"Invitation sent to {data.email}", "invite_id": invite_doc["invite_id"]}
 
 
@@ -247,6 +280,14 @@ async def accept_invitation(invite_id: str, user: dict = Depends(_get_user)):
             "joined_at": datetime.now(timezone.utc).isoformat()
         }}
     )
+
+    # Notify team that a new member joined
+    team = await db.teams.find_one({"team_id": invite["team_id"]}, {"_id": 0, "name": 1})
+    await _notify_team(db, invite["team_id"],
+        "New Team Member",
+        f"{user.get('name', user['email'])} has joined the team.",
+        exclude_user=user["user_id"], notif_type="team_join")
+
     return {"success": True, "message": "You have joined the team"}
 
 
@@ -344,6 +385,14 @@ async def create_team_task(data: TeamTaskCreate, user: dict = Depends(_get_user)
     }
     await db.team_tasks.insert_one(task_doc)
     task_doc.pop("_id", None)
+
+    # Notify assigned member
+    if data.assigned_to and data.assigned_to != user["user_id"]:
+        await _notify(db, data.assigned_to,
+            "Task Assigned",
+            f"{user.get('name', 'A teammate')} assigned you: \"{data.title}\"",
+            "team_task", task_id)
+
     return task_doc
 
 
@@ -390,6 +439,25 @@ async def update_team_task(task_id: str, request: Request, user: dict = Depends(
         {"task_id": task_id, "team_id": mem["team_id"]},
         {"$set": updates}
     )
+
+    # Notify on task completion
+    if "completed" in body and body["completed"]:
+        task = await db.team_tasks.find_one({"task_id": task_id}, {"_id": 0, "title": 1, "created_by": 1})
+        if task and task.get("created_by") and task["created_by"] != user["user_id"]:
+            await _notify(db, task["created_by"],
+                "Task Completed",
+                f"{user.get('name', 'A teammate')} completed: \"{task['title']}\"",
+                "team_task", task_id)
+
+    # Notify on reassignment
+    if "assigned_to" in body and body["assigned_to"] and body["assigned_to"] != user["user_id"]:
+        task = await db.team_tasks.find_one({"task_id": task_id}, {"_id": 0, "title": 1})
+        if task:
+            await _notify(db, body["assigned_to"],
+                "Task Assigned",
+                f"{user.get('name', 'A teammate')} assigned you: \"{task['title']}\"",
+                "team_task", task_id)
+
     return {"success": True}
 
 
@@ -423,6 +491,13 @@ async def create_team_reminder(data: TeamReminderCreate, user: dict = Depends(_g
     }
     await db.team_reminders.insert_one(rem_doc)
     rem_doc.pop("_id", None)
+
+    # Notify team about new reminder
+    await _notify_team(db, mem["team_id"],
+        "New Team Reminder",
+        f"{user.get('name', 'A teammate')} set a reminder: \"{data.title}\"",
+        exclude_user=user["user_id"], notif_type="team_reminder", related_id=reminder_id)
+
     return rem_doc
 
 
@@ -491,6 +566,13 @@ async def send_team_message(data: TeamMessageCreate, user: dict = Depends(_get_u
     }
     await db.team_messages.insert_one(msg_doc)
     msg_doc.pop("_id", None)
+
+    # Notify team members of new message
+    await _notify_team(db, mem["team_id"],
+        "New Team Message",
+        f"{user.get('name', 'A teammate')}: {data.content[:80]}{'...' if len(data.content) > 80 else ''}",
+        exclude_user=user["user_id"], notif_type="team_message", related_id=msg_id)
+
     return msg_doc
 
 
