@@ -21,6 +21,7 @@ from emergentintegrations.payments.stripe.checkout import StripeCheckout, Checko
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from routes.admin import admin_router
+from routes.teams import team_router
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -2004,6 +2005,7 @@ async def disconnect_whatsapp(user: dict = Depends(get_current_user)):
 # Include router and middleware
 app.include_router(api_router)
 app.include_router(admin_router)
+app.include_router(team_router)
 
 app.add_middleware(
     CORSMiddleware,

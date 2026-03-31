@@ -133,4 +133,29 @@ export const adminApi = {
   getRoles: () => api.get('/admin/roles'),
 };
 
+// Team API
+export const teamApi = {
+  getMyTeam: () => api.get('/teams/my-team'),
+  createTeam: (name) => api.post('/teams/create', { name }),
+  updateTeam: (data) => api.put('/teams/update', data),
+  invite: (email, role) => api.post('/teams/invite', { email, role }),
+  getInvitations: () => api.get('/teams/invitations'),
+  acceptInvite: (id) => api.post(`/teams/invitations/${id}/accept`),
+  declineInvite: (id) => api.post(`/teams/invitations/${id}/decline`),
+  removeMember: (id) => api.delete(`/teams/members/${id}`),
+  changeMemberRole: (id, role) => api.put(`/teams/members/${id}/role`, { role }),
+  leaveTeam: () => api.post('/teams/leave'),
+  // Shared workspace
+  getTasks: () => api.get('/teams/tasks'),
+  createTask: (data) => api.post('/teams/tasks', data),
+  updateTask: (id, data) => api.put(`/teams/tasks/${id}`, data),
+  deleteTask: (id) => api.delete(`/teams/tasks/${id}`),
+  getReminders: () => api.get('/teams/reminders'),
+  createReminder: (data) => api.post('/teams/reminders', data),
+  deleteReminder: (id) => api.delete(`/teams/reminders/${id}`),
+  getMessages: (page) => api.get('/teams/messages', { params: { page } }),
+  sendMessage: (content, conversation_id) => api.post('/teams/messages', { content, conversation_id }),
+  getAnalytics: () => api.get('/teams/analytics'),
+};
+
 export default api;

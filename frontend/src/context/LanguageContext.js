@@ -17,9 +17,11 @@ const translations = {
     tasks: 'Tasks',
     reminders: 'Reminders',
     calendar: 'Calendar',
+    team: 'Team',
     statistics: 'Statistics',
     whatsApp: 'WhatsApp',
     profile: 'Profile',
+    adminPanel: 'Admin Panel',
     signOut: 'Sign Out',
     
     // Auth
@@ -142,9 +144,11 @@ const translations = {
     tasks: 'المهام',
     reminders: 'التذكيرات',
     calendar: 'التقويم',
+    team: 'الفريق',
     statistics: 'الإحصائيات',
     whatsApp: 'واتساب',
     profile: 'الملف الشخصي',
+    adminPanel: 'لوحة الإدارة',
     signOut: 'تسجيل الخروج',
     
     // Auth

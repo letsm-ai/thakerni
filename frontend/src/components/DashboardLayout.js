@@ -17,7 +17,8 @@ import {
   Translate,
   Moon,
   Sun,
-  GearSix
+  GearSix,
+  UsersThree
 } from '@phosphor-icons/react';
 import { Sheet, SheetContent, SheetTrigger } from '../components/ui/sheet';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
@@ -28,6 +29,7 @@ const getNavItems = (t) => [
   { path: '/dashboard/tasks', icon: CheckSquare, label: t('tasks') },
   { path: '/dashboard/reminders', icon: Bell, label: t('reminders') },
   { path: '/dashboard/calendar', icon: Calendar, label: t('calendar') },
+  { path: '/dashboard/team', icon: UsersThree, label: t('team') },
   { path: '/dashboard/statistics', icon: ChartBar, label: t('statistics') },
   { path: '/dashboard/whatsapp', icon: WhatsappLogo, label: t('whatsApp') },
   { path: '/dashboard/profile', icon: User, label: t('profile') },

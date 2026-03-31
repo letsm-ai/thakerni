@@ -18,6 +18,7 @@ import WhatsApp from "./pages/WhatsApp";
 import Profile from "./pages/Profile";
 import Statistics from "./pages/Statistics";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
+import Team from "./pages/Team";
 
 // Components
 import DashboardLayout from "./components/DashboardLayout";
@@ -106,6 +107,16 @@ const AppRouter = () => {
           <ProtectedRoute>
             <DashboardLayout>
               <Profile />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/team"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <Team />
             </DashboardLayout>
           </ProtectedRoute>
         }
