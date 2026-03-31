@@ -12,6 +12,7 @@ Build an AI assistant SaaS platform with:
 - Stripe subscription billing (Free/Pro/Business)
 - Professional landing page to sell subscriptions
 - Admin Dashboard with role-based access control
+- Team features for Business plan
 
 ## Architecture
 - **Frontend**: React 19 + Tailwind CSS + Shadcn UI + Framer Motion + Phosphor Icons + Recharts
@@ -30,8 +31,8 @@ Build an AI assistant SaaS platform with:
 - GPT-5.2 AI chat with Arabic/English support
 - AI-powered task/reminder creation from natural language
 - Floating AI chat widget on landing page (guest, rate-limited)
+- Live Demo chat on landing page (real AI responses)
 - WhatsApp 2-way AI chat forwarding
-- Live Demo chat on landing page (real AI responses, not just scripted)
 
 ### Productivity
 - Tasks CRUD with priority levels
@@ -51,32 +52,35 @@ Build an AI assistant SaaS platform with:
 - Browser notifications for reminders (native API)
 - Weekly email digest with automated CRON scheduling (every Sunday 09:00 UTC)
 - Email preferences (opt-in/out toggles)
-- Digest schedule visibility in Profile page
 
 ### Admin Dashboard (Role-Based Access Control)
 - **Roles**: admin (full access), developer (users/analytics/system/audit), operations (users/subscriptions/billing/analytics), viewer (users/subscriptions/analytics)
-- **Overview**: Stat cards (users, tasks, conversations, reminders, revenue), subscription breakdown chart, 14-day signup trend chart
-- **User Management**: Paginated user table with search, plan filters (All/Free/Pro/Business), user detail side panel with role selector (5 roles), suspend/activate toggle, activity stats, payment history
-- **Analytics**: Signup trend area chart, daily activity bar chart (messages + tasks), country distribution pie chart, period summary stats, day range filter (7d/14d/30d)
-- **Billing**: Revenue cards (30-day revenue, transaction count, avg transaction), revenue bar chart, payment history table with status filters
-- **System Health**: Service status badges (OpenAI, Stripe, Resend, WhatsApp), WhatsApp connection details, database collection counts, email digest run history
-- **Audit Logs**: Timestamped log of admin actions (role changes, suspensions)
-- **IP Geolocation**: User country/city captured on login/signup via ip-api.com
+- **Pages**: Overview, User Management, Analytics (charts), Billing, System Health, Audit Logs
+- IP Geolocation capture on login/signup
+
+### Team Features (Business Plan)
+- **Team Management**: Create team (business plan only), invite members by email, roles (owner/admin/member), remove members, role changes (owner only), leave team
+- **Shared Tasks**: Create/assign/complete/delete team tasks, priority levels, assignee selector, creator attribution
+- **Shared Reminders**: Create team-wide reminders with datetime, creator attribution, deactivate
+- **Team Chat**: Real-time team messaging, user attribution, auto-scroll, polling refresh
+- **Team Analytics**: Stat cards (tasks/completed/reminders/messages), per-member activity table, billing info ($10/seat/mo)
+- **Access Control**: Business plan check, non-member 403s, role-based permissions
 
 ### UI/UX
-- Full Arabic/RTL support with language toggle (`dir="auto"` on all chat bubbles)
-- Dark mode with theme toggle (localStorage persistence)
-- Professional landing page redesigned to match atoms.world aesthetic
-- Mobile-responsive hamburger menu
-- Smooth scroll-to-section navigation
-- Back-to-top sticky button
-- Markdown bold text rendering in chat bubbles
-- Demo walkthrough modal
-- Voice input via Web Speech API
+- Full Arabic/RTL support with language toggle
+- Dark mode with theme toggle
+- Landing page (atoms.world aesthetic) with mobile hamburger menu
+- Smooth scroll navigation + back-to-top button
+- Markdown bold rendering in chat bubbles
+- Demo walkthrough modal, Voice input
+
+## Key Database Collections
+- users, tasks, reminders, conversations, messages, payment_transactions
+- teams, team_members, team_tasks, team_reminders, team_conversations, team_messages
+- audit_logs, digest_logs
 
 ## Backlog
 - P2: Add Resend API key to enable live email sending
 - P2: Refactor server.py (~2,000 lines) into modular routers
-- P2: Team features for Business plan
 - P2: CSV export option
 - P3: Add actual video to demo modal
