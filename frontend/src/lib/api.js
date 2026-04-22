@@ -101,10 +101,10 @@ export const subscriptionApi = {
 
 // Export API
 export const exportApi = {
-  exportTasks: () => api.get('/export/tasks'),
-  exportReminders: () => api.get('/export/reminders'),
-  exportConversations: () => api.get('/export/conversations'),
-  exportAll: () => api.get('/export/all'),
+  exportTasks: (format = 'json') => api.get('/export/tasks', { params: { format }, ...(format === 'csv' ? { responseType: 'blob' } : {}) }),
+  exportReminders: (format = 'json') => api.get('/export/reminders', { params: { format }, ...(format === 'csv' ? { responseType: 'blob' } : {}) }),
+  exportConversations: (format = 'json') => api.get('/export/conversations', { params: { format }, ...(format === 'csv' ? { responseType: 'blob' } : {}) }),
+  exportAll: (format = 'json') => api.get('/export/all', { params: { format }, ...(format === 'csv' ? { responseType: 'blob' } : {}) }),
 };
 
 // Email API
@@ -114,6 +114,8 @@ export const emailApi = {
   sendDigest: () => api.post('/email/send-digest'),
   previewDigest: () => api.post('/email/preview-digest'),
   getSchedule: () => api.get('/email/digest-schedule'),
+  getConfig: () => api.get('/email/config'),
+  updateConfig: (data) => api.post('/email/config', data),
 };
 
 // Admin API

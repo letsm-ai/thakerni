@@ -15,6 +15,8 @@ from datetime import datetime, timezone, timedelta
 import bcrypt
 import jwt
 import httpx
+import csv
+import io
 import resend
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
@@ -1431,27 +1433,44 @@ async def get_streaks(user: dict = Depends(get_current_user)):
 
 # ==================== DATA EXPORT ====================
 
+def _to_csv_response(rows: list, fieldnames: list, filename: str):
+    """Convert a list of dicts to a CSV response."""
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction='ignore')
+    writer.writeheader()
+    for row in rows:
+        writer.writerow({k: str(row.get(k, "")) for k in fieldnames})
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 @api_router.get("/export/tasks")
-async def export_tasks(user: dict = Depends(get_current_user)):
-    """Export all user tasks as JSON"""
+async def export_tasks(format: str = "json", user: dict = Depends(get_current_user)):
+    """Export all user tasks"""
     tasks = await db.tasks.find(
         {"user_id": user["user_id"]},
         {"_id": 0}
     ).sort("created_at", -1).to_list(1000)
+    if format == "csv":
+        return _to_csv_response(tasks, ["task_id", "title", "status", "priority", "due_date", "created_at"], "tasks.csv")
     return {"tasks": tasks, "count": len(tasks), "exported_at": datetime.now(timezone.utc).isoformat()}
 
 @api_router.get("/export/reminders")
-async def export_reminders(user: dict = Depends(get_current_user)):
-    """Export all user reminders as JSON"""
+async def export_reminders(format: str = "json", user: dict = Depends(get_current_user)):
+    """Export all user reminders"""
     reminders = await db.reminders.find(
         {"user_id": user["user_id"]},
         {"_id": 0}
     ).sort("created_at", -1).to_list(1000)
+    if format == "csv":
+        return _to_csv_response(reminders, ["reminder_id", "title", "remind_at", "status", "created_at"], "reminders.csv")
     return {"reminders": reminders, "count": len(reminders), "exported_at": datetime.now(timezone.utc).isoformat()}
 
 @api_router.get("/export/conversations")
-async def export_conversations(user: dict = Depends(get_current_user)):
-    """Export all user conversations with messages as JSON"""
+async def export_conversations(format: str = "json", user: dict = Depends(get_current_user)):
+    """Export all user conversations with messages"""
     conversations = await db.conversations.find(
         {"user_id": user["user_id"]},
         {"_id": 0}
@@ -1465,10 +1484,24 @@ async def export_conversations(user: dict = Depends(get_current_user)):
         ).sort("created_at", 1).to_list(500)
         result.append({**conv, "messages": messages})
 
+    if format == "csv":
+        # Flatten conversations into message rows
+        rows = []
+        for conv in result:
+            for msg in conv.get("messages", []):
+                rows.append({
+                    "conversation_id": conv.get("conversation_id"),
+                    "conversation_title": conv.get("title", ""),
+                    "role": msg.get("role", ""),
+                    "content": msg.get("content", ""),
+                    "created_at": msg.get("created_at", "")
+                })
+        return _to_csv_response(rows, ["conversation_id", "conversation_title", "role", "content", "created_at"], "conversations.csv")
+
     return {"conversations": result, "count": len(result), "exported_at": datetime.now(timezone.utc).isoformat()}
 
 @api_router.get("/export/all")
-async def export_all_data(user: dict = Depends(get_current_user)):
+async def export_all_data(format: str = "json", user: dict = Depends(get_current_user)):
     """Export all user data (tasks, reminders, conversations)"""
     tasks = await db.tasks.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(1000)
     reminders = await db.reminders.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(1000)
@@ -1478,6 +1511,18 @@ async def export_all_data(user: dict = Depends(get_current_user)):
     for conv in conversations:
         messages = await db.messages.find({"conversation_id": conv["conversation_id"]}, {"_id": 0}).sort("created_at", 1).to_list(500)
         conv_data.append({**conv, "messages": messages})
+
+    if format == "csv":
+        # Combine all data types into a single CSV with a "type" column
+        rows = []
+        for t in tasks:
+            rows.append({"type": "task", "id": t.get("task_id"), "title": t.get("title"), "status": t.get("status"), "priority": t.get("priority"), "created_at": t.get("created_at")})
+        for r in reminders:
+            rows.append({"type": "reminder", "id": r.get("reminder_id"), "title": r.get("title"), "status": r.get("status"), "priority": "", "created_at": r.get("created_at")})
+        for conv in conv_data:
+            for msg in conv.get("messages", []):
+                rows.append({"type": "message", "id": msg.get("message_id"), "title": conv.get("title", ""), "status": msg.get("role", ""), "priority": "", "created_at": msg.get("created_at", "")})
+        return _to_csv_response(rows, ["type", "id", "title", "status", "priority", "created_at"], "all_data.csv")
 
     return {
         "user": {"email": user["email"], "name": user.get("name")},
@@ -1873,6 +1918,72 @@ async def preview_digest(user: dict = Depends(get_current_user)):
     """Preview the weekly digest HTML without sending"""
     html = await generate_digest_html(user["user_id"], user["email"], user.get("name", ""))
     return {"html": html}
+
+@api_router.get("/email/config")
+async def get_email_config(user: dict = Depends(get_current_user)):
+    """Get current email configuration status"""
+    if user.get("role") not in ("admin", "developer"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return {
+        "configured": bool(RESEND_API_KEY),
+        "sender_email": SENDER_EMAIL,
+    }
+
+@api_router.post("/email/config")
+async def update_email_config(request: Request, user: dict = Depends(get_current_user)):
+    """Update Resend API key and sender email (admin only)"""
+    global RESEND_API_KEY, SENDER_EMAIL
+    if user.get("role") not in ("admin", "developer"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    body = await request.json()
+    new_key = body.get("resend_api_key", "").strip()
+    new_sender = body.get("sender_email", "").strip()
+
+    if new_key:
+        RESEND_API_KEY = new_key
+        resend.api_key = new_key
+        # Persist to .env
+        env_path = Path(__file__).parent / ".env"
+        env_content = env_path.read_text() if env_path.exists() else ""
+        if "RESEND_API_KEY" in env_content:
+            import re as re_mod
+            env_content = re_mod.sub(r'RESEND_API_KEY=.*', f'RESEND_API_KEY={new_key}', env_content)
+        else:
+            env_content += f"\nRESEND_API_KEY={new_key}"
+        env_path.write_text(env_content)
+
+    if new_sender:
+        SENDER_EMAIL = new_sender
+        env_path = Path(__file__).parent / ".env"
+        env_content = env_path.read_text()
+        if "SENDER_EMAIL" in env_content:
+            import re as re_mod
+            env_content = re_mod.sub(r'SENDER_EMAIL=.*', f'SENDER_EMAIL={new_sender}', env_content)
+        else:
+            env_content += f"\nSENDER_EMAIL={new_sender}"
+        env_path.write_text(env_content)
+
+    # Test the key by sending a test call
+    test_result = None
+    if new_key:
+        try:
+            resend.Emails.send({
+                "from": f"Letsm AI <{SENDER_EMAIL}>",
+                "to": [user["email"]],
+                "subject": "Letsm AI - Email Configuration Test",
+                "html": "<h2>Email configured successfully!</h2><p>Your Resend API key is working. You will now receive weekly digest emails.</p>"
+            })
+            test_result = "success"
+        except Exception as e:
+            test_result = str(e)
+
+    return {
+        "success": True,
+        "configured": bool(RESEND_API_KEY),
+        "sender_email": SENDER_EMAIL,
+        "test_result": test_result
+    }
 
 
 # ==================== SCHEDULED DIGEST JOB ====================

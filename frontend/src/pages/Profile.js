@@ -20,8 +20,13 @@ const Profile = () => {
   const [sendingDigest, setSendingDigest] = useState(false);
   const [previewHtml, setPreviewHtml] = useState(null);
   const [digestSchedule, setDigestSchedule] = useState(null);
+  const [exportFormat, setExportFormat] = useState('json');
+  const [emailConfig, setEmailConfig] = useState(null);
+  const [resendKey, setResendKey] = useState('');
+  const [senderEmail, setSenderEmail] = useState('');
+  const [savingConfig, setSavingConfig] = useState(false);
 
-  useEffect(() => { loadSubscription(); loadEmailPrefs(); loadDigestSchedule(); }, []);
+  useEffect(() => { loadSubscription(); loadEmailPrefs(); loadDigestSchedule(); loadEmailConfig(); }, []);
 
   const loadSubscription = async () => {
     try {
@@ -48,6 +53,31 @@ const Profile = () => {
       const res = await emailApi.getSchedule();
       setDigestSchedule(res.data);
     } catch { /* non-critical */ }
+  };
+
+  const loadEmailConfig = async () => {
+    try {
+      const res = await emailApi.getConfig();
+      setEmailConfig(res.data);
+      if (res.data.sender_email) setSenderEmail(res.data.sender_email);
+    } catch { /* non-admin users won't have access */ }
+  };
+
+  const handleSaveEmailConfig = async () => {
+    setSavingConfig(true);
+    try {
+      const res = await emailApi.updateConfig({ resend_api_key: resendKey, sender_email: senderEmail });
+      setEmailConfig(res.data);
+      setResendKey('');
+      if (res.data.test_result === 'success') {
+        toast.success('Email configured! A test email has been sent to your inbox.');
+      } else if (res.data.test_result) {
+        toast.error(`Key saved but test failed: ${res.data.test_result}`);
+      } else {
+        toast.success('Email configuration updated.');
+      }
+    } catch (e) { toast.error(e.response?.data?.detail || 'Failed to save config'); }
+    finally { setSavingConfig(false); }
   };
 
   const toggleEmailPref = async (key) => {
@@ -100,21 +130,28 @@ const Profile = () => {
     setExporting(type);
     try {
       let res;
-      if (type === 'tasks') res = await exportApi.exportTasks();
-      else if (type === 'reminders') res = await exportApi.exportReminders();
-      else if (type === 'conversations') res = await exportApi.exportConversations();
-      else res = await exportApi.exportAll();
+      if (type === 'tasks') res = await exportApi.exportTasks(exportFormat);
+      else if (type === 'reminders') res = await exportApi.exportReminders(exportFormat);
+      else if (type === 'conversations') res = await exportApi.exportConversations(exportFormat);
+      else res = await exportApi.exportAll(exportFormat);
 
-      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
+      let blob, ext;
+      if (exportFormat === 'csv') {
+        blob = new Blob([res.data], { type: 'text/csv' });
+        ext = 'csv';
+      } else {
+        blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
+        ext = 'json';
+      }
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `letsm-${type}-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `letsm-${type}-${new Date().toISOString().slice(0, 10)}.${ext}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} exported successfully`);
+      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} exported as ${ext.toUpperCase()}`);
     } catch { toast.error('Export failed. Please try again.'); }
     finally { setExporting(null); }
   };
@@ -368,14 +405,61 @@ const Profile = () => {
         )}
       </div>
 
+      {/* Email Configuration (Admin only) */}
+      {emailConfig !== null && (
+        <div className="bg-white border border-slate-200 rounded-lg p-6 mb-6" data-testid="email-config-section">
+          <div className="flex items-center gap-3 mb-4">
+            <EnvelopeSimple size={22} className="text-blue-600" weight="fill" />
+            <h3 className="font-semibold text-slate-900">Email Service Configuration</h3>
+            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${emailConfig.configured ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+              {emailConfig.configured ? 'Connected' : 'Not Configured'}
+            </span>
+          </div>
+          <p className="text-sm text-slate-500 mb-4">
+            Configure your Resend API key to enable email delivery (weekly digests, notifications). Get your API key at <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-violet-600 underline">resend.com</a>.
+          </p>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">Resend API Key</label>
+              <input type="password" value={resendKey} onChange={e => setResendKey(e.target.value)}
+                placeholder={emailConfig.configured ? '••••••••••• (configured)' : 're_xxxxxxxxxx'}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+                data-testid="resend-key-input" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">Sender Email</label>
+              <input type="email" value={senderEmail} onChange={e => setSenderEmail(e.target.value)}
+                placeholder="onboarding@resend.dev"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+                data-testid="sender-email-input" />
+            </div>
+            <button onClick={handleSaveEmailConfig} disabled={savingConfig || (!resendKey && !senderEmail)}
+              className="px-5 py-2.5 bg-violet-600 text-white text-sm font-medium rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors"
+              data-testid="save-email-config-btn">
+              {savingConfig ? 'Saving...' : 'Save & Test'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Data Export Section */}
       <div className="bg-white border border-slate-200 rounded-lg p-6 mb-6" data-testid="export-section">
-        <div className="flex items-center gap-3 mb-4">
-          <Export size={22} className="text-emerald-600" weight="fill" />
-          <h3 className="font-semibold text-slate-900">Export Your Data</h3>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Export size={22} className="text-emerald-600" weight="fill" />
+            <h3 className="font-semibold text-slate-900">Export Your Data</h3>
+          </div>
+          <div className="flex bg-slate-100 rounded-lg p-0.5" data-testid="export-format-toggle">
+            <button onClick={() => setExportFormat('json')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${exportFormat === 'json' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}
+              data-testid="export-format-json">JSON</button>
+            <button onClick={() => setExportFormat('csv')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${exportFormat === 'csv' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}
+              data-testid="export-format-csv">CSV</button>
+          </div>
         </div>
         <p className="text-sm text-slate-500 mb-4">
-          Download your data as JSON files. You own your data.
+          Download your data as {exportFormat.toUpperCase()} files. You own your data.
         </p>
         <div className="grid grid-cols-2 gap-3">
           {[
