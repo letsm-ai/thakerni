@@ -14,11 +14,32 @@ Build an AI assistant SaaS platform with:
 - **Frontend**: React 19 + Tailwind CSS + Shadcn UI + Framer Motion + Phosphor Icons + Recharts
 - **Backend**: FastAPI (Python) + MongoDB + APScheduler
 - **AI**: OpenAI GPT-5.2 via Emergent Integrations
-- **Auth**: JWT + Emergent Google OAuth
+- **Auth**: JWT (in-memory token store) + Emergent Google OAuth
 - **Payments**: Stripe via Emergent StripeCheckout
 - **WhatsApp**: Baileys v7 Node.js -> FastAPI AI endpoint
 - **Email**: Resend (configurable via Profile > Email Config)
 - **Scheduler**: APScheduler for weekly email digests (Sunday 09:00 UTC)
+
+## Backend Architecture (Post-Refactor)
+```
+/app/backend/
+├── server.py          (79 lines — thin app orchestrator)
+├── database.py        (DB connection + shared config)
+├── models.py          (All Pydantic models)
+├── auth_helpers.py    (JWT auth, password hashing, get_current_user)
+├── routes/
+│   ├── auth.py        (register, login, OAuth session, me, logout)
+│   ├── chat.py        (AI chat, guest chat, NLP task/reminder parsing)
+│   ├── tasks.py       (Task CRUD)
+│   ├── reminders.py   (Reminder CRUD)
+│   ├── calendar.py    (Calendar event CRUD)
+│   ├── misc.py        (Notifications, profile, stats, health check)
+│   ├── services.py    (Stripe, data export, WhatsApp proxy)
+│   ├── email.py       (Email digest, preferences, config)
+│   ├── admin.py       (Admin dashboard endpoints)
+│   └── teams.py       (Team collaboration endpoints)
+└── tests/
+```
 
 ## All Implemented Features
 
@@ -37,6 +58,7 @@ Build an AI assistant SaaS platform with:
 
 ### Auth & Billing
 - JWT + Emergent Google OAuth
+- In-memory token store (XSS-safe, no localStorage for auth)
 - Stripe subscription billing (Free/Pro/Business)
 - Checkout sessions, payment polling, webhooks
 
@@ -64,6 +86,14 @@ Build an AI assistant SaaS platform with:
 - Landing page (atoms.world aesthetic), smooth scroll, back-to-top
 - Markdown bold rendering, Demo walkthrough modal, Voice input
 
+## Security & Code Quality (Completed)
+- [x] Removed hardcoded credentials from all test files
+- [x] Replaced localStorage with in-memory tokenStore for auth tokens
+- [x] Fixed missing React Hook dependencies (DashboardLayout, Chat, Profile)
+- [x] Fixed empty catch blocks in Team.js
+- [x] Replaced index-as-key patterns in Landing, Profile, AdminUsers
+- [x] Refactored server.py from 2144 lines to 79-line orchestrator
+
 ## Backlog
-- P2: Refactor server.py (~2,100 lines) into modular routers
-- P3: Add actual video to demo modal
+- P2: Add actual video to demo modal
+- P3: Implement team calendar view for shared tasks/reminders
