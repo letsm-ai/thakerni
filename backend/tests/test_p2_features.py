@@ -12,11 +12,11 @@ import io
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
-# Test credentials
-ADMIN_EMAIL = "test-stripe@test.com"
-ADMIN_PASSWORD = "Test123!"
-REGULAR_EMAIL = "demo@test.com"
-REGULAR_PASSWORD = "Test123!"
+# Test credentials from environment
+ADMIN_EMAIL = os.environ.get('TEST_ADMIN_EMAIL', 'test-stripe@test.com')
+ADMIN_PASSWORD = os.environ.get('TEST_ADMIN_PASSWORD', 'Test123!')
+REGULAR_EMAIL = os.environ.get('TEST_REGULAR_EMAIL', 'demo@test.com')
+REGULAR_PASSWORD = os.environ.get('TEST_REGULAR_PASSWORD', 'Test123!')
 
 
 class TestCSVExport:

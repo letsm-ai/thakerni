@@ -8,9 +8,9 @@ import os
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
-# Test credentials
-TEST_EMAIL = "test-stripe@test.com"
-TEST_PASSWORD = "Test123!"
+# Test credentials from environment
+TEST_EMAIL = os.environ.get('TEST_ADMIN_EMAIL', 'test-stripe@test.com')
+TEST_PASSWORD = os.environ.get('TEST_ADMIN_PASSWORD', 'Test123!')
 
 class TestHealthEndpoints:
     """Health check tests - run first"""

@@ -6,11 +6,10 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://ai-functions-core.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
-# Test credentials for admin user
-ADMIN_EMAIL = "test-stripe@test.com"
-ADMIN_PASSWORD = "Test123!"
+ADMIN_EMAIL = os.environ.get('TEST_ADMIN_EMAIL', 'test-stripe@test.com')
+ADMIN_PASSWORD = os.environ.get('TEST_ADMIN_PASSWORD', 'Test123!')
 
 
 class TestAdminAuth:

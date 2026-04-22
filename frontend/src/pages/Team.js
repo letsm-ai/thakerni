@@ -164,7 +164,7 @@ const TasksTab = ({ members, t }) => {
   const [assignedTo, setAssignedTo] = useState('');
 
   const load = useCallback(async () => {
-    try { const res = await teamApi.getTasks(); setTasks(res.data.tasks); } catch {}
+    try { const res = await teamApi.getTasks(); setTasks(res.data.tasks); } catch (e) { console.error('Failed to load team tasks:', e); }
   }, []);
   useEffect(() => { load(); }, [load]);
 
@@ -237,7 +237,7 @@ const RemindersTab = ({ t }) => {
   const [time, setTime] = useState('');
 
   const load = useCallback(async () => {
-    try { const res = await teamApi.getReminders(); setReminders(res.data.reminders); } catch {}
+    try { const res = await teamApi.getReminders(); setReminders(res.data.reminders); } catch (e) { console.error('Failed to load team reminders:', e); }
   }, []);
   useEffect(() => { load(); }, [load]);
 
@@ -288,7 +288,7 @@ const ChatTab = ({ user, t }) => {
   const chatRef = useRef(null);
 
   const load = useCallback(async () => {
-    try { const res = await teamApi.getMessages(1); setMessages(res.data.messages); } catch {}
+    try { const res = await teamApi.getMessages(1); setMessages(res.data.messages); } catch (e) { console.error('Failed to load team messages:', e); }
   }, []);
 
   useEffect(() => { load(); const i = setInterval(load, 5000); return () => clearInterval(i); }, [load]);

@@ -17,11 +17,11 @@ ROLE_PERMISSIONS = {
 }
 
 def _db():
-    from server import db
+    from database import db
     return db
 
 def _get_current_user():
-    from server import get_current_user
+    from auth_helpers import get_current_user
     return get_current_user
 
 

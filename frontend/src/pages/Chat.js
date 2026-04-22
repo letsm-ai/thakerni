@@ -87,13 +87,13 @@ const Chat = () => {
 
   useEffect(() => {
     loadConversations();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (activeConversation) {
       loadMessages(activeConversation);
     }
-  }, [activeConversation]);
+  }, [activeConversation]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     scrollToBottom();

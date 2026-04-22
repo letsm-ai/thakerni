@@ -10,11 +10,11 @@ logger = logging.getLogger(__name__)
 team_router = APIRouter(prefix="/api/teams")
 
 def _db():
-    from server import db
+    from database import db
     return db
 
 async def _get_user(request: Request):
-    from server import get_current_user
+    from auth_helpers import get_current_user
     from fastapi.security import HTTPBearer
     security = HTTPBearer(auto_error=False)
     credentials = await security(request)

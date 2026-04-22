@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -76,6 +76,8 @@ const NotificationBell = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
+  const notificationsRef = useRef([]);
+  const unreadCountRef = useRef(0);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -86,20 +88,23 @@ const NotificationBell = () => {
       const newNotifs = notifRes.data.slice(0, 10);
       
       // Browser notification for new team events
-      if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && unreadCount > 0) {
-        const newTeamNotifs = newNotifs.filter(n => !n.read && n.type?.startsWith('team') && !notifications.find(o => o.notification_id === n.notification_id));
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && unreadCountRef.current > 0) {
+        const prev = notificationsRef.current;
+        const newTeamNotifs = newNotifs.filter(n => !n.read && n.type?.startsWith('team') && !prev.find(o => o.notification_id === n.notification_id));
         if (newTeamNotifs.length > 0) {
           const latest = newTeamNotifs[0];
           new Notification(latest.title, { body: latest.message, icon: '/favicon.ico' });
         }
       }
       
+      notificationsRef.current = newNotifs;
+      unreadCountRef.current = countRes.data.count;
       setNotifications(newNotifs);
       setUnreadCount(countRes.data.count);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }
-  }, [unreadCount, notifications]);
+  }, []);
 
   const checkReminders = useCallback(async () => {
     try {

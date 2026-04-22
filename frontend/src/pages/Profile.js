@@ -26,7 +26,7 @@ const Profile = () => {
   const [senderEmail, setSenderEmail] = useState('');
   const [savingConfig, setSavingConfig] = useState(false);
 
-  useEffect(() => { loadSubscription(); loadEmailPrefs(); loadDigestSchedule(); loadEmailConfig(); }, []);
+  useEffect(() => { loadSubscription(); loadEmailPrefs(); loadDigestSchedule(); loadEmailConfig(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadSubscription = async () => {
     try {
@@ -281,8 +281,8 @@ const Profile = () => {
                   ) : null}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {plan.features.slice(0, 3).map((feat, i) => (
-                    <span key={i} className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">{feat}</span>
+                  {plan.features.slice(0, 3).map((feat) => (
+                    <span key={feat} className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">{feat}</span>
                   ))}
                   {plan.features.length > 3 && <span className="text-xs text-slate-400">+{plan.features.length - 3} more</span>}
                 </div>

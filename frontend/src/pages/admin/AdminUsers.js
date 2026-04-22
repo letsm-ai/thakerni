@@ -216,8 +216,8 @@ export default function AdminUsers() {
               <div className="mt-5">
                 <label className="text-xs font-medium text-slate-500 mb-1.5 block">Payments</label>
                 <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                  {userDetail.payments.map((p, i) => (
-                    <div key={i} className="flex justify-between text-xs bg-slate-50 rounded-lg px-3 py-2">
+                  {userDetail.payments.map((p) => (
+                    <div key={`${p.amount}-${p.status}-${p.created_at || Math.random()}`} className="flex justify-between text-xs bg-slate-50 rounded-lg px-3 py-2">
                       <span className="text-slate-600">${p.amount}</span>
                       <span className={`font-medium ${p.status === 'completed' ? 'text-green-600' : 'text-amber-600'}`}>{p.status}</span>
                     </div>
