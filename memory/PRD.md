@@ -93,6 +93,7 @@ Build an AI assistant SaaS platform with:
 - [x] Fixed empty catch blocks in Team.js
 - [x] Replaced index-as-key patterns in Landing, Profile, AdminUsers
 - [x] Refactored server.py from 2144 lines to 79-line orchestrator
+- [x] Full Arabic/RTL translation on ALL dashboard pages (Tasks, Reminders, Chat, Calendar, Statistics, WhatsApp, Profile)
 
 ### Google Calendar Integration (Bidirectional Sync)
 - OAuth2 flow: each user connects their own Google Calendar

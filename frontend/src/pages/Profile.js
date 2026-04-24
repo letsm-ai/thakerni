@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { userApi, subscriptionApi, exportApi, emailApi } from '../lib/api';
 import { User, EnvelopeSimple, Calendar, PencilSimple, Check, CrownSimple, Lightning, DownloadSimple, BellRinging, Export, Envelope, Eye } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 const Profile = () => {
   const { user, setUserData } = useAuth();
+  const { t, isRTL } = useLanguage();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user?.name || '');
   const [saving, setSaving] = useState(false);
@@ -181,8 +183,8 @@ const Profile = () => {
   return (
     <div className="p-6 md:p-8 max-w-2xl mx-auto" data-testid="profile-page">
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-heading">Profile</h1>
-        <p className="text-slate-500 mt-1">Manage your account settings</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-heading">{t('profileTitle')}</h1>
+        <p className="text-slate-500 mt-1">{t('manageAccount')}</p>
       </div>
 
       {/* Profile Card */}

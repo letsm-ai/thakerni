@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { remindersApi } from '../lib/api';
+import { useLanguage } from '../context/LanguageContext';
 import { Plus, Bell, Trash, Clock, Repeat } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Calendar } from '../components/ui/calendar';
 
 const Reminders = () => {
+  const { t, isRTL } = useLanguage();
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -89,8 +91,8 @@ const Reminders = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-heading">Reminders</h1>
-          <p className="text-slate-500 mt-1">Never miss an important moment</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-heading">{t('reminders')}</h1>
+          <p className="text-slate-500 mt-1">{isRTL ? 'لا تفوت أي لحظة مهمة' : 'Never miss an important moment'}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -98,7 +100,7 @@ const Reminders = () => {
           data-testid="add-reminder-button"
         >
           <Plus size={20} weight="bold" />
-          Add Reminder
+          {t('addReminder')}
         </button>
       </div>
 
@@ -109,7 +111,7 @@ const Reminders = () => {
         ) : reminders.length === 0 ? (
           <div className="text-center py-12 bg-slate-50 rounded-lg border border-slate-200">
             <Bell size={48} className="text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-500">No reminders set</p>
+            <p className="text-slate-500">{t('noReminders')}</p>
             <button
               onClick={() => setShowModal(true)}
               className="mt-4 text-[#002FA7] font-semibold hover:underline"
@@ -171,43 +173,45 @@ const Reminders = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-slate-900 font-heading">
-              Create New Reminder
+              {t('createNewReminder')}
             </DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleCreateReminder} className="space-y-4 mt-4">
             <div>
               <label className="text-sm font-semibold text-slate-900 mb-1.5 block">
-                Reminder Title *
+                {t('reminderTitle')} *
               </label>
               <input
                 type="text"
                 value={newReminder.title}
                 onChange={(e) => setNewReminder({ ...newReminder, title: e.target.value })}
                 className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-md text-slate-900 focus:border-[#002FA7] focus:ring-1 focus:ring-[#002FA7] outline-none"
-                placeholder="Enter reminder title"
+                placeholder={isRTL ? 'أدخل عنوان التذكير' : 'Enter reminder title'}
                 required
+                dir="auto"
                 data-testid="reminder-title-input"
               />
             </div>
 
             <div>
               <label className="text-sm font-semibold text-slate-900 mb-1.5 block">
-                Description
+                {t('description')}
               </label>
               <textarea
                 value={newReminder.description}
                 onChange={(e) => setNewReminder({ ...newReminder, description: e.target.value })}
                 className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-md text-slate-900 focus:border-[#002FA7] focus:ring-1 focus:ring-[#002FA7] outline-none resize-none"
                 rows={2}
-                placeholder="Add description (optional)"
+                placeholder={isRTL ? 'أضف وصفاً (اختياري)' : 'Add description (optional)'}
+                dir="auto"
                 data-testid="reminder-description-input"
               />
             </div>
 
             <div>
               <label className="text-sm font-semibold text-slate-900 mb-1.5 block">
-                Date *
+                {t('date')} *
               </label>
               <Calendar
                 mode="single"
@@ -220,7 +224,7 @@ const Reminders = () => {
 
             <div>
               <label className="text-sm font-semibold text-slate-900 mb-1.5 block">
-                Time *
+                {t('time')} *
               </label>
               <input
                 type="time"
@@ -234,7 +238,7 @@ const Reminders = () => {
 
             <div>
               <label className="text-sm font-semibold text-slate-900 mb-1.5 block">
-                Repeat
+                {t('repeat')}
               </label>
               <div className="flex gap-2">
                 {['none', 'daily', 'weekly', 'monthly'].map((r) => (
@@ -249,7 +253,7 @@ const Reminders = () => {
                     }`}
                     data-testid={`repeat-${r}`}
                   >
-                    {r === 'none' ? 'Once' : r.charAt(0).toUpperCase() + r.slice(1)}
+                    {r === 'none' ? t('once') : r === 'daily' ? t('daily') : r === 'weekly' ? t('weekly') : t('monthly')}
                   </button>
                 ))}
               </div>
@@ -262,7 +266,7 @@ const Reminders = () => {
                 className="flex-1 px-4 py-2.5 bg-white text-slate-900 border border-slate-200 rounded-md font-medium hover:bg-slate-50 transition-colors"
                 data-testid="cancel-reminder-button"
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 type="submit"
@@ -270,7 +274,7 @@ const Reminders = () => {
                 className="flex-1 px-4 py-2.5 bg-[#002FA7] text-white rounded-md font-semibold hover:bg-[#001A7A] transition-colors disabled:opacity-50"
                 data-testid="save-reminder-button"
               >
-                Create Reminder
+                {t('createReminder')}
               </button>
             </div>
           </form>

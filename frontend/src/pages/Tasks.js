@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { tasksApi } from '../lib/api';
+import { useLanguage } from '../context/LanguageContext';
 import { Plus, Check, Trash, Circle, Flag, Calendar as CalendarIcon, X } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Calendar } from '../components/ui/calendar';
 
 const Tasks = () => {
+  const { t, isRTL } = useLanguage();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -90,8 +92,8 @@ const Tasks = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-heading">Tasks</h1>
-          <p className="text-slate-500 mt-1">Manage your tasks and stay productive</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-heading">{t('tasks')}</h1>
+          <p className="text-slate-500 mt-1">{isRTL ? 'أدر مهامك وكن منتجاً' : 'Manage your tasks and stay productive'}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -99,7 +101,7 @@ const Tasks = () => {
           data-testid="add-task-button"
         >
           <Plus size={20} weight="bold" />
-          Add Task
+          {t('addTask')}
         </button>
       </div>
 
@@ -116,7 +118,7 @@ const Tasks = () => {
             }`}
             data-testid={`filter-${f}`}
           >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
+            {f === 'all' ? t('all') : f === 'pending' ? t('pending') : t('completed')}
           </button>
         ))}
       </div>
@@ -128,12 +130,12 @@ const Tasks = () => {
         ) : filteredTasks.length === 0 ? (
           <div className="text-center py-12 bg-slate-50 rounded-lg border border-slate-200">
             <Circle size={48} className="text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-500">No tasks found</p>
+            <p className="text-slate-500">{t('noTasks')}</p>
             <button
               onClick={() => setShowModal(true)}
               className="mt-4 text-[#002FA7] font-semibold hover:underline"
             >
-              Create your first task
+              {t('createFirstTask')}
             </button>
           </div>
         ) : (
@@ -200,43 +202,45 @@ const Tasks = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-slate-900 font-heading">
-              Create New Task
+              {t('createNewTask')}
             </DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleCreateTask} className="space-y-4 mt-4">
             <div>
               <label className="text-sm font-semibold text-slate-900 mb-1.5 block">
-                Task Title *
+                {t('taskTitle')} *
               </label>
               <input
                 type="text"
                 value={newTask.title}
                 onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                 className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-md text-slate-900 focus:border-[#002FA7] focus:ring-1 focus:ring-[#002FA7] outline-none"
-                placeholder="Enter task title"
+                placeholder={isRTL ? 'أدخل عنوان المهمة' : 'Enter task title'}
                 required
+                dir="auto"
                 data-testid="task-title-input"
               />
             </div>
 
             <div>
               <label className="text-sm font-semibold text-slate-900 mb-1.5 block">
-                Description
+                {t('description')}
               </label>
               <textarea
                 value={newTask.description}
                 onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                 className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-md text-slate-900 focus:border-[#002FA7] focus:ring-1 focus:ring-[#002FA7] outline-none resize-none"
                 rows={3}
-                placeholder="Add description (optional)"
+                placeholder={isRTL ? 'أضف وصفاً (اختياري)' : 'Add description (optional)'}
+                dir="auto"
                 data-testid="task-description-input"
               />
             </div>
 
             <div>
               <label className="text-sm font-semibold text-slate-900 mb-1.5 block">
-                Due Date
+                {t('dueDate')}
               </label>
               <Calendar
                 mode="single"
@@ -249,7 +253,7 @@ const Tasks = () => {
 
             <div>
               <label className="text-sm font-semibold text-slate-900 mb-1.5 block">
-                Priority
+                {t('priority')}
               </label>
               <div className="flex gap-2">
                 {['low', 'medium', 'high'].map((p) => (
@@ -266,7 +270,7 @@ const Tasks = () => {
                     }`}
                     data-testid={`priority-${p}`}
                   >
-                    {p.charAt(0).toUpperCase() + p.slice(1)}
+                    {p === 'high' ? t('high') : p === 'medium' ? t('medium') : t('low')}
                   </button>
                 ))}
               </div>
@@ -279,14 +283,14 @@ const Tasks = () => {
                 className="flex-1 px-4 py-2.5 bg-white text-slate-900 border border-slate-200 rounded-md font-medium hover:bg-slate-50 transition-colors"
                 data-testid="cancel-task-button"
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 type="submit"
                 className="flex-1 px-4 py-2.5 bg-[#002FA7] text-white rounded-md font-semibold hover:bg-[#001A7A] transition-colors"
                 data-testid="save-task-button"
               >
-                Create Task
+                {t('createTask')}
               </button>
             </div>
           </form>

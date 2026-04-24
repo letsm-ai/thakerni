@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { chatApi } from '../lib/api';
+import { useLanguage } from '../context/LanguageContext';
 import { PaperPlaneRight, Plus, Trash, ChatCircle, Robot, User, SpinnerGap, Microphone, Stop } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -18,6 +19,7 @@ const renderMd = (text) => {
 };
 
 const Chat = () => {
+  const { t, isRTL } = useLanguage();
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -209,7 +211,7 @@ const Chat = () => {
             data-testid="new-chat-button"
           >
             <Plus size={20} weight="bold" />
-            New Chat
+            {t('newChat')}
           </button>
         </div>
 
@@ -241,7 +243,7 @@ const Chat = () => {
 
           {conversations.length === 0 && (
             <div className="text-center py-8 text-slate-500 text-sm">
-              No conversations yet
+              {t('noConversations')}
             </div>
           )}
         </div>
@@ -257,10 +259,10 @@ const Chat = () => {
                 <Robot size={32} className="text-[#002FA7]" />
               </div>
               <h2 className="text-xl font-semibold text-slate-900 font-heading mb-2">
-                How can I help you today?
+                {t('howCanIHelp')}
               </h2>
               <p className="text-slate-500 max-w-md">
-                I'm Letsm AI, your intelligent assistant. Ask me anything about tasks, reminders, or get help with your daily activities.
+                {t('imLetsmAI')} {isRTL ? 'اسألني أي شيء عن المهام والتذكيرات.' : 'Ask me anything about tasks, reminders, or get help with your daily activities.'}
               </p>
             </div>
           )}
@@ -324,7 +326,7 @@ const Chat = () => {
               <div className="bg-slate-50 rounded-lg p-4">
                 <div className="flex items-center gap-2">
                   <SpinnerGap size={16} className="text-[#002FA7] animate-spin" />
-                  <span className="text-slate-500 text-sm">Thinking...</span>
+                  <span className="text-slate-500 text-sm">{t('thinking')}</span>
                 </div>
               </div>
             </motion.div>
@@ -374,7 +376,7 @@ const Chat = () => {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={isListening ? (speechLang === 'ar-SA' ? "جاري الاستماع..." : "Listening...") : "Type your message... / اكتب رسالتك..."}
+              placeholder={isListening ? (speechLang === 'ar-SA' ? "جاري الاستماع..." : "Listening...") : (isRTL ? "اكتب رسالتك..." : "Type your message... / اكتب رسالتك...")}
               className={`flex-1 px-4 py-2.5 bg-white border rounded-md text-slate-900 focus:border-[#002FA7] focus:ring-1 focus:ring-[#002FA7] outline-none transition-all ${
                 isListening ? 'border-red-300 bg-red-50' : 'border-slate-200'
               }`}

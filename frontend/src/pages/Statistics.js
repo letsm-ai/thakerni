@@ -72,6 +72,7 @@ const ActivityBar = ({ day, tasks_completed, messages_sent, maxValue }) => {
 };
 
 const Statistics = () => {
+  const { t, isRTL } = useLanguage();
   const [overview, setOverview] = useState(null);
   const [activity, setActivity] = useState([]);
   const [streaks, setStreaks] = useState(null);
@@ -118,8 +119,8 @@ const Statistics = () => {
     <div className="p-6 md:p-8 max-w-6xl mx-auto" data-testid="statistics-page">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-heading">Statistics</h1>
-        <p className="text-slate-500 mt-1">Track your productivity and achievements</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-heading">{t('statisticsTitle')}</h1>
+        <p className="text-slate-500 mt-1">{t('trackProductivity')}</p>
       </div>
 
       {/* Streak Banner */}
@@ -146,33 +147,33 @@ const Statistics = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard
           icon={CheckCircle}
-          title="Tasks Completed"
+          title={t('tasksCompleted')}
           value={overview?.tasks?.completed || 0}
-          subtitle={`${overview?.tasks?.completion_rate || 0}% completion rate`}
+          subtitle={`${overview?.tasks?.completion_rate || 0}% ${t('completionRate')}`}
           color="green"
           delay={0}
         />
         <StatCard
           icon={Clock}
-          title="Pending Tasks"
+          title={t('pendingTasks')}
           value={overview?.tasks?.pending || 0}
-          subtitle={`${overview?.tasks?.high_priority_pending || 0} high priority`}
+          subtitle={`${overview?.tasks?.high_priority_pending || 0} ${t('highPriority')}`}
           color="yellow"
           delay={0.1}
         />
         <StatCard
           icon={ChatCircle}
-          title="AI Conversations"
+          title={t('aiConversations')}
           value={overview?.conversations?.total || 0}
-          subtitle={`${overview?.conversations?.messages_this_week || 0} messages this week`}
+          subtitle={`${overview?.conversations?.messages_this_week || 0} ${t('messagesThisWeek')}`}
           color="blue"
           delay={0.2}
         />
         <StatCard
           icon={Bell}
-          title="Active Reminders"
+          title={t('activeReminders')}
           value={overview?.reminders?.active || 0}
-          subtitle={`${overview?.reminders?.total || 0} total set`}
+          subtitle={`${overview?.reminders?.total || 0} ${t('totalSet')}`}
           color="red"
           delay={0.3}
         />
@@ -183,7 +184,7 @@ const Statistics = () => {
         <div className="lg:col-span-2 bg-white border border-slate-200 rounded-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900 font-heading">Weekly Activity</h2>
+              <h2 className="text-lg font-semibold text-slate-900 font-heading">{t('weeklyActivity')}</h2>
               <p className="text-sm text-slate-500">Tasks completed and messages sent</p>
             </div>
             <div className="flex items-center gap-4 text-sm">

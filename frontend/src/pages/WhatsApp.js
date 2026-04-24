@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { whatsappApi } from '../lib/api';
+import { useLanguage } from '../context/LanguageContext';
 import { WhatsappLogo, QrCode, CheckCircle, XCircle, ArrowClockwise, Power, WifiHigh } from '@phosphor-icons/react';
 import QRCode from 'react-qr-code';
 
 const WhatsApp = () => {
+  const { t, isRTL } = useLanguage();
   const [status, setStatus] = useState({ connected: false, initializing: false });
   const [qrCode, setQrCode] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -80,8 +82,8 @@ const WhatsApp = () => {
     <div className="p-6 md:p-8 max-w-2xl mx-auto" data-testid="whatsapp-page">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-heading">WhatsApp Integration</h1>
-        <p className="text-slate-500 mt-1">Connect your WhatsApp to receive AI assistance</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-heading">{t('whatsAppIntegration')}</h1>
+        <p className="text-slate-500 mt-1">{t('connectWhatsApp')}</p>
       </div>
 
       {/* Status Card */}
@@ -94,12 +96,12 @@ const WhatsApp = () => {
               <WhatsappLogo size={24} className={status.connected ? 'text-green-600' : 'text-slate-400'} weight="fill" />
             </div>
             <div>
-              <h2 className="font-semibold text-slate-900">Connection Status</h2>
+              <h2 className="font-semibold text-slate-900">{t('connectionStatus')}</h2>
               <div className="flex items-center gap-2 mt-1">
                 {status.connected ? (
                   <>
                     <CheckCircle size={16} className="text-green-500" weight="fill" />
-                    <span className="text-sm text-green-600" data-testid="whatsapp-connected">Connected</span>
+                    <span className="text-sm text-green-600" data-testid="whatsapp-connected">{t('connected')}</span>
                     {status.user?.name && (
                       <span className="text-xs text-slate-400 ml-1">({status.user.name})</span>
                     )}
@@ -112,7 +114,7 @@ const WhatsApp = () => {
                 ) : (
                   <>
                     <XCircle size={16} className="text-slate-400" weight="fill" />
-                    <span className="text-sm text-slate-500" data-testid="whatsapp-disconnected">Not connected</span>
+                    <span className="text-sm text-slate-500" data-testid="whatsapp-disconnected">{t('notConnected')}</span>
                   </>
                 )}
               </div>
@@ -142,7 +144,7 @@ const WhatsApp = () => {
               Connect WhatsApp
             </h2>
             <p className="text-slate-500 text-sm mb-6">
-              Scan the QR code with WhatsApp to connect your account
+              {t('scanQR')}
             </p>
 
             {loading ? (
@@ -197,7 +199,7 @@ const WhatsApp = () => {
 
             {!loading && !error && (
               <div className="mt-6 text-left bg-slate-50 rounded-lg p-4">
-                <h3 className="font-semibold text-slate-900 text-sm mb-2">How to connect:</h3>
+                <h3 className="font-semibold text-slate-900 text-sm mb-2">{t('howToConnect')}</h3>
                 <ol className="text-sm text-slate-600 space-y-2">
                   <li>1. Click "Generate QR Code" if no code is shown</li>
                   <li>2. Open WhatsApp on your phone</li>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { calendarApi, googleCalendarApi } from '../lib/api';
+import { useLanguage } from '../context/LanguageContext';
 import { Plus, Trash, Clock, CalendarBlank, GoogleLogo, ArrowsClockwise, Link, LinkBreak, CloudArrowDown, CloudArrowUp, Globe } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
@@ -8,6 +9,7 @@ import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
 
 const CalendarPage = () => {
+  const { t, isRTL } = useLanguage();
   const [events, setEvents] = useState([]);
   const [googleEvents, setGoogleEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -224,8 +226,8 @@ const CalendarPage = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-heading">Calendar</h1>
-          <p className="text-slate-500 mt-1">Manage your schedule and events</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-heading">{t('calendar')}</h1>
+          <p className="text-slate-500 mt-1">{isRTL ? 'أدر جدولك وأحداثك' : 'Manage your schedule and events'}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -233,7 +235,7 @@ const CalendarPage = () => {
           data-testid="add-event-button"
         >
           <Plus size={20} weight="bold" />
-          Add Event
+          {t('addEvent')}
         </button>
       </div>
 
