@@ -35,7 +35,7 @@ SUBSCRIPTION_PLANS = {
         "name": "Free",
         "name_ar": "مجاني",
         "price": 0.00,
-        "currency": "sar",
+        "currency": "omr",
         "features": ["10 Messages/day", "5 Active Tasks", "Basic Reminders", "Email Support"],
         "features_ar": ["10 رسائل/يوم", "5 مهام نشطة", "تذكيرات أساسية", "دعم بالبريد"],
         "limits": {"max_tasks": 5, "max_messages_daily": 10}
@@ -44,7 +44,7 @@ SUBSCRIPTION_PLANS = {
         "name": "Pro",
         "name_ar": "برو",
         "price": 20.00,
-        "currency": "sar",
+        "currency": "omr",
         "features": ["Unlimited Messages", "Unlimited Tasks", "Voice Input", "Advanced Analytics", "Priority Support"],
         "features_ar": ["رسائل غير محدودة", "مهام غير محدودة", "إدخال صوتي", "تحليلات متقدمة", "دعم أولوية"],
         "limits": {"max_tasks": -1, "max_messages_daily": 500}
@@ -53,7 +53,7 @@ SUBSCRIPTION_PLANS = {
         "name": "Business",
         "name_ar": "بزنس",
         "price": 50.00,
-        "currency": "sar",
+        "currency": "omr",
         "features": ["All Pro Features", "WhatsApp Integration", "Team up to 10", "Custom API", "Account Manager"],
         "features_ar": ["كل مميزات برو", "تكامل واتساب", "فريق حتى 10", "API مخصص", "مدير حساب"],
         "limits": {"max_tasks": -1, "max_messages_daily": 500}
