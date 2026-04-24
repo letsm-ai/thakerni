@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { adminApi } from '../../lib/api';
+import { useLanguage } from '../../context/LanguageContext';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function AdminAudit() {
+  const { isRTL } = useLanguage();
   const [logs, setLogs] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -32,7 +34,7 @@ export default function AdminAudit() {
   return (
     <div data-testid="admin-audit-page">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Audit Logs</h1>
+        <h1 className="text-2xl font-bold text-slate-900">{isRTL ? 'سجل المراجعة' : 'Audit Logs'}</h1>
         <span className="text-sm text-slate-400">{total} entries</span>
       </div>
 

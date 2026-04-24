@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { adminApi } from '../../lib/api';
+import { useLanguage } from '../../context/LanguageContext';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const COLORS = ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#ec4899', '#14b8a6'];
 
 export default function AdminAnalytics() {
+  const { isRTL } = useLanguage();
   const [signups, setSignups] = useState([]);
   const [activity, setActivity] = useState([]);
   const [countries, setCountries] = useState([]);
@@ -34,7 +36,7 @@ export default function AdminAnalytics() {
   return (
     <div data-testid="admin-analytics-page">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Analytics</h1>
+        <h1 className="text-2xl font-bold text-slate-900">{isRTL ? 'التحليلات' : 'Analytics'}</h1>
         <div className="flex gap-1.5">
           {[7, 14, 30].map(d => (
             <button key={d} onClick={() => setDays(d)}

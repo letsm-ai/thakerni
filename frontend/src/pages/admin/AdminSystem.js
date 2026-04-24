@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminApi } from '../../lib/api';
+import { useLanguage } from '../../context/LanguageContext';
 import { CheckCircle, XCircle, AlertCircle, Database } from 'lucide-react';
 
 const StatusBadge = ({ ok, label }) => (
@@ -10,6 +11,7 @@ const StatusBadge = ({ ok, label }) => (
 );
 
 export default function AdminSystem() {
+  const { isRTL } = useLanguage();
   const [health, setHealth] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -29,7 +31,7 @@ export default function AdminSystem() {
 
   return (
     <div data-testid="admin-system-page">
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">System Health</h1>
+      <h1 className="text-2xl font-bold text-slate-900 mb-6">{isRTL ? 'صحة النظام' : 'System Health'}</h1>
 
       {/* Service statuses */}
       <div className="bg-white rounded-xl border border-slate-200 p-5 mb-6" data-testid="services-status">

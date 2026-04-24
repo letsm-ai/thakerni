@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { adminApi } from '../../lib/api';
+import { useLanguage } from '../../context/LanguageContext';
 import { Search, ChevronLeft, ChevronRight, Shield, UserX, UserCheck, Eye } from 'lucide-react';
 
 const ROLES = ['user', 'viewer', 'operations', 'developer', 'admin'];
 const PLANS = ['all', 'free', 'pro', 'business'];
 
 export default function AdminUsers() {
+  const { isRTL } = useLanguage();
   const [users, setUsers] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -63,7 +65,7 @@ export default function AdminUsers() {
   return (
     <div data-testid="admin-users-page">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Users</h1>
+        <h1 className="text-2xl font-bold text-slate-900">{isRTL ? 'المستخدمين' : 'Users'}</h1>
         <span className="text-sm text-slate-400">{total} total</span>
       </div>
 

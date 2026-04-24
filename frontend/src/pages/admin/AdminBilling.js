@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { adminApi } from '../../lib/api';
+import { useLanguage } from '../../context/LanguageContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function AdminBilling() {
+  const { isRTL } = useLanguage();
   const [payments, setPayments] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -36,7 +38,7 @@ export default function AdminBilling() {
 
   return (
     <div data-testid="admin-billing-page">
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">Billing & Payments</h1>
+      <h1 className="text-2xl font-bold text-slate-900 mb-6">{isRTL ? 'الفواتير والمدفوعات' : 'Billing & Payments'}</h1>
 
       {/* Revenue cards */}
       <div className="grid grid-cols-3 gap-4 mb-6">
