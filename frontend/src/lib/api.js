@@ -77,6 +77,9 @@ export const whatsappApi = {
   getQR: () => api.get('/whatsapp/qr'),
   connect: () => api.post('/whatsapp/connect'),
   disconnect: () => api.post('/whatsapp/disconnect'),
+  getLinkStatus: () => api.get('/whatsapp/link-status'),
+  generateLinkCode: () => api.post('/whatsapp/generate-link-code'),
+  unlinkWhatsApp: () => api.post('/whatsapp/unlink'),
 };
 
 // Notifications API

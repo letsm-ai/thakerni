@@ -8,6 +8,8 @@ import csv
 import io
 import httpx
 import logging
+import random
+import string
 
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
@@ -231,183 +233,218 @@ async def stripe_webhook(request: Request):
         return {"received": True, "error": str(e)}
 
 
-# ==================== WHATSAPP ====================
+# ==================== WHATSAPP (Multi-User Bot) ====================
 
 async def _get_wa_user_profile(phone: str) -> dict:
-    """Get or create a WhatsApp user profile for memory/personalization."""
     profile = await db.wa_profiles.find_one({"phone": phone}, {"_id": 0})
     if not profile:
-        profile = {
-            "phone": phone,
-            "name": None,
-            "preferences": [],
-            "facts": [],
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
+        profile = {"phone": phone, "name": None, "preferences": [], "facts": [], "created_at": datetime.now(timezone.utc).isoformat()}
         await db.wa_profiles.insert_one(profile)
     return profile
 
 
 async def _get_wa_history(phone: str, limit: int = 20) -> list:
-    """Get recent WhatsApp conversation history for context."""
-    messages = await db.whatsapp_messages.find(
-        {"phone_number": phone}, {"_id": 0}
-    ).sort("created_at", -1).to_list(limit)
+    messages = await db.whatsapp_messages.find({"phone_number": phone}, {"_id": 0}).sort("created_at", -1).to_list(limit)
     messages.reverse()
     return messages
 
 
 async def _update_wa_profile(phone: str, ai_response: str, user_message: str):
-    """Extract and save user facts/preferences from conversation."""
-    # Simple extraction: if AI learned something about the user, save it
     lower = user_message.lower()
     updates = {}
-
-    # Detect name
-    name_hints = ['اسمي', 'انا', 'أنا', 'my name is', "i'm ", 'i am ']
-    for hint in name_hints:
+    for hint in ['اسمي', 'انا', 'أنا', 'my name is', "i'm ", 'i am ']:
         if hint in lower:
             parts = user_message.split(hint, 1)
             if len(parts) > 1:
-                name_candidate = parts[1].strip().split()[0:2]
-                name = ' '.join(name_candidate).strip('.,!؟')
+                name = ' '.join(parts[1].strip().split()[0:2]).strip('.,!؟')
                 if len(name) > 1:
                     updates["name"] = name
                     break
-
     if updates:
         await db.wa_profiles.update_one({"phone": phone}, {"$set": updates})
 
 
+async def _check_wa_rate_limit(user_id: str, subscription: str) -> dict:
+    if subscription in ("pro", "business"):
+        return {"allowed": True, "remaining": -1}
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    count = await db.whatsapp_messages.count_documents({"user_id": user_id, "created_at": {"$gte": today_start.isoformat()}})
+    limit = 5
+    return {"allowed": count < limit, "remaining": max(0, limit - count), "limit": limit}
+
+
+# ── WhatsApp Linking ──
+
+@services_router.post("/whatsapp/generate-link-code")
+async def generate_link_code(user: dict = Depends(get_current_user)):
+    code = "LINK-" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    await db.wa_link_codes.delete_many({"user_id": user["user_id"]})
+    await db.wa_link_codes.insert_one({
+        "code": code, "user_id": user["user_id"],
+        "user_name": user.get("name", ""), "user_email": user.get("email", ""),
+        "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    return {"code": code, "expires_in_minutes": 10}
+
+
+@services_router.post("/whatsapp/verify-link")
+async def verify_link_code(request: Request):
+    body = await request.json()
+    phone, code = body.get("phone_number"), body.get("code")
+    if not phone or not code:
+        return {"success": False, "message": "Missing data"}
+
+    code_doc = await db.wa_link_codes.find_one({"code": code}, {"_id": 0})
+    if not code_doc:
+        return {"success": False, "message": "Invalid code"}
+
+    expires = datetime.fromisoformat(code_doc["expires_at"])
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if expires < datetime.now(timezone.utc):
+        await db.wa_link_codes.delete_one({"code": code})
+        return {"success": False, "message": "Code expired"}
+
+    await db.users.update_one(
+        {"user_id": code_doc["user_id"]},
+        {"$set": {"whatsapp_number": phone, "whatsapp_linked_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    await db.wa_link_codes.delete_one({"code": code})
+    logger.info(f"WhatsApp linked: {phone} -> {code_doc['user_id']}")
+    return {"success": True, "user_name": code_doc.get("user_name", ""), "user_id": code_doc["user_id"]}
+
+
+@services_router.get("/whatsapp/link-status")
+async def get_wa_link_status(user: dict = Depends(get_current_user)):
+    user_doc = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0})
+    linked = bool(user_doc and user_doc.get("whatsapp_number"))
+    return {
+        "linked": linked,
+        "phone_number": user_doc.get("whatsapp_number") if linked else None,
+        "linked_at": user_doc.get("whatsapp_linked_at") if linked else None
+    }
+
+
+@services_router.post("/whatsapp/unlink")
+async def unlink_whatsapp(user: dict = Depends(get_current_user)):
+    await db.users.update_one({"user_id": user["user_id"]}, {"$unset": {"whatsapp_number": "", "whatsapp_linked_at": ""}})
+    return {"success": True, "message": "WhatsApp unlinked"}
+
+
+# ── WhatsApp AI (Multi-User) ──
+
 @services_router.post("/whatsapp/ai")
 async def whatsapp_ai_process(body: WhatsAppAIRequest):
-    session_id = f"wa_{body.phone_number}"
+    phone = body.phone_number
+    user_doc = await db.users.find_one({"whatsapp_number": phone}, {"_id": 0})
 
-    # Get user profile and conversation history
-    profile = await _get_wa_user_profile(body.phone_number)
-    history = await _get_wa_history(body.phone_number, limit=20)
+    if not user_doc:
+        return {
+            "response": "مرحباً! 👋\n\nأنا *Letsm AI*، مساعدك الذكي.\n\nعشان تستخدمني:\n1. سجّل في تطبيق Letsm AI\n2. من صفحة واتساب، اضغط *ربط واتساب*\n3. أرسل الكود هنا\n\nسجّل الآن وابدأ! 🚀",
+            "success": True, "blocked": True
+        }
 
-    # Build context from history
+    subscription = user_doc.get("subscription", "free")
+    rate = await _check_wa_rate_limit(user_doc["user_id"], subscription)
+    if not rate["allowed"]:
+        return {
+            "response": f"⚠️ وصلت الحد اليومي ({rate['limit']} رسائل/يوم) للخطة المجانية.\n\nترقّ للخطة Pro للرسائل بلا حدود! 🚀",
+            "success": True, "blocked": True
+        }
+
+    session_id = f"wa_{phone}"
+    profile = await _get_wa_user_profile(phone)
+    history = await _get_wa_history(phone, limit=20)
+
     history_text = ""
-    if history:
-        recent = history[-15:]  # Last 15 exchanges
-        for msg in recent:
-            history_text += f"User: {msg.get('user_message', '')}\nAssistant: {msg.get('ai_response', '')}\n\n"
+    for msg in (history[-15:] if history else []):
+        history_text += f"User: {msg.get('user_message', '')}\nAssistant: {msg.get('ai_response', '')}\n\n"
 
-    # Current date/time info
     now = datetime.now(timezone.utc)
     date_info = now.strftime("%A, %B %d, %Y at %I:%M %p UTC")
     date_info_ar = now.strftime("%Y-%m-%d %H:%M")
 
-    # User profile context
-    profile_context = ""
-    if profile.get("name"):
-        profile_context += f"User's name: {profile['name']}. "
-    if profile.get("facts"):
-        profile_context += f"Known facts: {', '.join(profile['facts'][-5:])}. "
+    user_name = user_doc.get("name") or profile.get("name") or ""
+    profile_ctx = f"User's name: {user_name}. " if user_name else ""
+    profile_ctx += f"Plan: {subscription}. "
 
-    system_prompt = f"""You are Letsm AI, a smart personal WhatsApp assistant for this specific user. You have memory and context.
+    system_prompt = f"""You are Letsm AI, a smart personal WhatsApp assistant.
 
 CURRENT DATE & TIME: {date_info} ({date_info_ar})
-Today is {now.strftime('%A')}. Use this for any time-related requests (today, tomorrow, this week, etc.).
+Today is {now.strftime('%A')}. "Today" = {now.strftime('%Y-%m-%d')}, "Tomorrow" = {(now + timedelta(days=1)).strftime('%Y-%m-%d')}.
 
-USER PROFILE: {profile_context if profile_context else 'New user - learn about them through conversation.'}
+USER PROFILE: {profile_ctx}
 
-CONVERSATION HISTORY (recent messages):
-{history_text if history_text else 'No previous messages - this is the start of the conversation.'}
+CONVERSATION HISTORY:
+{history_text or 'New conversation.'}
 
 RULES:
-1. ALWAYS detect and respond in the user's language. If Arabic, respond in Arabic. If English, respond in English.
-2. You have FULL conversation history above. Use it to understand context. If the user says "1" or "2" or any number, look at your LAST message to understand what options you gave them.
-3. When the user asks to set reminders or tasks, use the CURRENT DATE above to calculate the correct date/time. "Today" = {now.strftime('%Y-%m-%d')}, "Tomorrow" = {(now + timedelta(days=1)).strftime('%Y-%m-%d')}.
-4. Keep responses SHORT and WhatsApp-friendly. Use *bold* for emphasis.
-5. Remember everything the user tells you about themselves (name, habits, preferences).
-6. Do NOT ask unnecessary questions. If the user says "ذكرني اتصل بزوجتي الساعة 10" - confirm and create the reminder directly.
-7. When giving options, use simple text not numbered lists. If you must use numbers, remember them in context.
-8. Be proactive - suggest helpful follow-ups based on what you know about the user.
+1. ALWAYS respond in the user's language. Arabic → Arabic. English → English.
+2. Use conversation history for context. If user replies with a number, check your last message.
+3. Use CURRENT DATE for time-related requests.
+4. Keep responses SHORT and WhatsApp-friendly. Use *bold*.
+5. Remember user info. Do NOT ask unnecessary questions.
+6. Be proactive with follow-ups.
 
-أنت مساعد ذكي شخصي عبر واتساب. لديك ذاكرة كاملة للمحادثات السابقة. استخدم السياق دائماً.
-التاريخ الحالي: {date_info_ar}"""
+أنت مساعد ذكي شخصي. لديك ذاكرة كاملة. استخدم السياق دائماً."""
 
     try:
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY, session_id=session_id,
-            system_message=system_prompt
-        )
+        chat = LlmChat(api_key=EMERGENT_LLM_KEY, session_id=session_id, system_message=system_prompt)
         chat.with_model("openai", "gpt-5.2")
-        user_message_obj = UserMessage(text=body.message)
-        ai_response = await chat.send_message(user_message_obj)
+        ai_response = await chat.send_message(UserMessage(text=body.message))
 
-        # Save message to history
         await db.whatsapp_messages.insert_one({
-            "phone_number": body.phone_number,
-            "user_message": body.message,
-            "ai_response": ai_response,
+            "phone_number": phone, "user_id": user_doc["user_id"],
+            "user_message": body.message, "ai_response": ai_response,
             "created_at": datetime.now(timezone.utc).isoformat()
         })
-
-        # Update user profile with learned info
-        await _update_wa_profile(body.phone_number, ai_response, body.message)
-
+        await _update_wa_profile(phone, ai_response, body.message)
         return {"response": ai_response, "success": True}
     except Exception as e:
-        logger.error(f"WhatsApp AI error: {str(e)}")
-        if "budget" in str(e).lower() or "exceeded" in str(e).lower():
-            return {"response": "عذراً، خدمة الذكاء الاصطناعي غير متاحة حالياً. حاول لاحقاً.", "success": False}
+        logger.error(f"WhatsApp AI error: {e}")
+        if "budget" in str(e).lower():
+            return {"response": "عذراً، خدمة الذكاء الاصطناعي غير متاحة حالياً.", "success": False}
         return {"response": "عذراً، حدث خطأ. حاول مرة ثانية.", "success": False}
 
+
+# ── WhatsApp Service Proxy (Admin) ──
 
 @services_router.get("/whatsapp/status")
 async def get_whatsapp_status(user: dict = Depends(get_current_user)):
     try:
-        async with httpx.AsyncClient() as http_client:
-            response = await http_client.get(f"{WHATSAPP_SERVICE_URL}/status", timeout=5.0)
-            return response.json()
-    except Exception as e:
-        logger.error(f"WhatsApp service error: {str(e)}")
+        async with httpx.AsyncClient() as c:
+            r = await c.get(f"{WHATSAPP_SERVICE_URL}/status", timeout=5.0)
+            return r.json()
+    except Exception:
         return {"connected": False, "error": "WhatsApp service unavailable"}
 
 
 @services_router.get("/whatsapp/qr")
 async def get_whatsapp_qr(user: dict = Depends(get_current_user)):
     try:
-        async with httpx.AsyncClient() as http_client:
-            response = await http_client.get(f"{WHATSAPP_SERVICE_URL}/qr", timeout=5.0)
-            return response.json()
-    except Exception as e:
-        logger.error(f"WhatsApp QR error: {str(e)}")
-        return {"qr": None, "message": "WhatsApp service unavailable. Please try again."}
-
-
-@services_router.post("/whatsapp/send")
-async def send_whatsapp_message(request: Request, user: dict = Depends(get_current_user)):
-    body = await request.json()
-    try:
-        async with httpx.AsyncClient() as http_client:
-            response = await http_client.post(f"{WHATSAPP_SERVICE_URL}/send", json=body, timeout=10.0)
-            return response.json()
-    except Exception as e:
-        logger.error(f"WhatsApp send error: {str(e)}")
-        return {"success": False, "error": str(e)}
+        async with httpx.AsyncClient() as c:
+            r = await c.get(f"{WHATSAPP_SERVICE_URL}/qr", timeout=5.0)
+            return r.json()
+    except Exception:
+        return {"qr": None, "message": "WhatsApp service unavailable."}
 
 
 @services_router.post("/whatsapp/connect")
 async def connect_whatsapp(user: dict = Depends(get_current_user)):
     try:
-        async with httpx.AsyncClient() as http_client:
-            response = await http_client.post(f"{WHATSAPP_SERVICE_URL}/connect", timeout=15.0)
-            return response.json()
-    except Exception as e:
-        logger.error(f"WhatsApp connect error: {str(e)}")
+        async with httpx.AsyncClient() as c:
+            r = await c.post(f"{WHATSAPP_SERVICE_URL}/connect", timeout=15.0)
+            return r.json()
+    except Exception:
         return {"success": False, "error": "WhatsApp service unavailable"}
 
 
 @services_router.post("/whatsapp/disconnect")
 async def disconnect_whatsapp(user: dict = Depends(get_current_user)):
     try:
-        async with httpx.AsyncClient() as http_client:
-            response = await http_client.post(f"{WHATSAPP_SERVICE_URL}/disconnect", timeout=5.0)
-            return response.json()
+        async with httpx.AsyncClient() as c:
+            r = await c.post(f"{WHATSAPP_SERVICE_URL}/disconnect", timeout=5.0)
+            return r.json()
     except Exception as e:
-        logger.error(f"WhatsApp disconnect error: {str(e)}")
         return {"success": False, "error": str(e)}
