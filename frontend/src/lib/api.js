@@ -149,6 +149,7 @@ export const adminApi = {
   getSystemHealth: () => api.get('/admin/system/health'),
   getAuditLogs: (params) => api.get('/admin/audit-logs', { params }),
   getRoles: () => api.get('/admin/roles'),
+  getUsage: () => api.get('/admin/usage'),
 };
 
 // Team API

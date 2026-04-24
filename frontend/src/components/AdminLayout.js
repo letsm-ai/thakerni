@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { ChartBar, Users, CreditCard, Activity, Shield, FileText, ArrowLeft, ArrowRight } from 'lucide-react';
+import { ChartBar, Users, CreditCard, Activity, Shield, FileText, ArrowLeft, ArrowRight, Gauge } from 'lucide-react';
 
 const ROLE_PERMISSIONS = {
   admin: new Set(["users", "subscriptions", "billing", "analytics", "system", "roles", "audit", "announcements"]),
@@ -24,6 +24,7 @@ export default function AdminLayout() {
     { to: '/admin/billing', label: isRTL ? 'الفواتير' : 'Billing', icon: CreditCard, perm: 'billing' },
     { to: '/admin/system', label: isRTL ? 'النظام' : 'System', icon: Shield, perm: 'system' },
     { to: '/admin/audit', label: isRTL ? 'سجل المراجعة' : 'Audit Logs', icon: FileText, perm: 'audit' },
+    { to: '/admin/usage', label: isRTL ? 'استهلاك التوكنات' : 'Token Usage', icon: Gauge, perm: 'analytics' },
   ];
 
   if (!ROLE_PERMISSIONS[role]) {

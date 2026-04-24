@@ -347,7 +347,7 @@ async def admin_system_health(user: dict = Depends(require_permission("system"))
     for col in collections:
         db_stats[col] = await db[col].count_documents({})
 
-    from server import RESEND_API_KEY, EMERGENT_LLM_KEY, STRIPE_API_KEY
+    from database import RESEND_API_KEY, EMERGENT_LLM_KEY, STRIPE_API_KEY
     services = {
         "openai_llm": bool(EMERGENT_LLM_KEY),
         "stripe": bool(STRIPE_API_KEY),

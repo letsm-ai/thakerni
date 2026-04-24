@@ -32,6 +32,7 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminBilling from "./pages/admin/AdminBilling";
 import AdminSystem from "./pages/admin/AdminSystem";
 import AdminAudit from "./pages/admin/AdminAudit";
+import AdminUsage from "./pages/admin/AdminUsage";
 
 // Router component to handle session_id detection
 const AppRouter = () => {
@@ -157,6 +158,7 @@ const AppRouter = () => {
         <Route path="billing" element={<AdminBilling />} />
         <Route path="system" element={<AdminSystem />} />
         <Route path="audit" element={<AdminAudit />} />
+        <Route path="usage" element={<AdminUsage />} />
       </Route>
 
       {/* Default redirect */}
