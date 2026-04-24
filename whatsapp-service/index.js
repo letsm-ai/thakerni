@@ -111,9 +111,9 @@ async function initWhatsApp() {
                     const ownerLid = connectedUser?.lid?.split(':')[0] || '';
                     const jidBase = jid.split('@')[0].split(':')[0];
                     
-                    const isSelfChat = (jidBase === ownerNum) || (jidBase === ownerLid) || (jid.endsWith('@lid') && fromMe && !message.key.participant);
+                    const isSelfChat = (jidBase === ownerNum) || (ownerLid && jidBase === ownerLid);
                     
-                    console.log(`[MSG] jid=${jid} | fromMe=${fromMe} | ownerNum=${ownerNum} | ownerLid=${ownerLid} | isSelfChat=${isSelfChat}`);
+                    console.log(`[MSG] jid=${jid} | jidBase=${jidBase} | ownerNum=${ownerNum} | ownerLid=${ownerLid} | isSelfChat=${isSelfChat}`);
                     
                     if (!isSelfChat) {
                         continue;
