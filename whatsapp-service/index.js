@@ -95,21 +95,27 @@ async function initWhatsApp() {
                     const jid = message.key.remoteJid || '';
                     const fromMe = message.key.fromMe;
                     
-                    // Debug log every message
-                    const ownerNum = connectedUser?.id?.split(':')[0] || '';
-                    console.log(`[MSG] jid=${jid} | fromMe=${fromMe} | ownerNum=${ownerNum} | participant=${message.key.participant || 'none'} | hasMsg=${!!message.message}`);
-                    
                     // Skip status broadcasts, groups, newsletters
-                    if (jid === 'status@broadcast' || jid.endsWith('@g.us') || jid.endsWith('@newsletter') || jid.endsWith('@lid')) {
+                    if (jid === 'status@broadcast' || jid.endsWith('@g.us') || jid.endsWith('@newsletter')) {
                         continue;
                     }
                     
-                    // Only respond in SELF-CHAT
-                    // Self-chat: fromMe=true AND remoteJid contains the owner's number
-                    const jidNumber = jid.split('@')[0].split(':')[0];
-                    const isSelfChat = fromMe && (jidNumber === ownerNum);
+                    // Only respond to owner's own messages (self-chat)
+                    // Self-chat appears as: fromMe=true with jid being owner's LID or phone number
+                    if (!fromMe || !message.message) {
+                        continue;
+                    }
                     
-                    if (!isSelfChat || !message.message) {
+                    // Check if this is self-chat (owner's LID or owner's phone number)
+                    const ownerNum = connectedUser?.id?.split(':')[0] || '';
+                    const ownerLid = connectedUser?.lid?.split(':')[0] || '';
+                    const jidBase = jid.split('@')[0].split(':')[0];
+                    
+                    const isSelfChat = (jidBase === ownerNum) || (jidBase === ownerLid) || (jid.endsWith('@lid') && fromMe && !message.key.participant);
+                    
+                    console.log(`[MSG] jid=${jid} | fromMe=${fromMe} | ownerNum=${ownerNum} | ownerLid=${ownerLid} | isSelfChat=${isSelfChat}`);
+                    
+                    if (!isSelfChat) {
                         continue;
                     }
                     
