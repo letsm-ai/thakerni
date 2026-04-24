@@ -1,8 +1,11 @@
-const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
+const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage } = require('@whiskeysockets/baileys');
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const axios = require('axios');
+const FormData = require('form-data');
+const path = require('path');
+const os = require('os');
 
 const app = express();
 app.use(cors());
@@ -117,8 +120,47 @@ async function initWhatsApp() {
 async function handleIncomingMessage(message) {
     try {
         const phoneNumber = message.key.remoteJid.replace('@s.whatsapp.net', '');
-        const messageText = message.message.conversation ||
+        let messageText = message.message.conversation ||
                            message.message.extendedTextMessage?.text || '';
+        
+        // Handle voice/audio messages
+        const audioMsg = message.message.audioMessage;
+        if (audioMsg) {
+            console.log(`Received voice message from ${phoneNumber}, transcribing...`);
+            try {
+                // Download the audio
+                const buffer = await downloadMediaMessage(message, 'buffer', {});
+                
+                // Save to temp file
+                const tmpFile = path.join(os.tmpdir(), `wa_voice_${Date.now()}.ogg`);
+                fs.writeFileSync(tmpFile, buffer);
+                
+                // Send to backend for transcription
+                const form = new FormData();
+                form.append('file', fs.createReadStream(tmpFile), { filename: 'voice.ogg', contentType: 'audio/ogg' });
+                
+                const transcribeRes = await axios.post(`${FASTAPI_URL}/api/whatsapp/transcribe`, form, {
+                    headers: form.getHeaders(),
+                    timeout: 30000
+                });
+                
+                // Clean up temp file
+                fs.unlinkSync(tmpFile);
+                
+                if (transcribeRes.data && transcribeRes.data.success && transcribeRes.data.text) {
+                    messageText = transcribeRes.data.text;
+                    console.log(`Transcribed: ${messageText}`);
+                } else {
+                    await sendMessage(phoneNumber, "عذراً، ما قدرت أفهم الرسالة الصوتية. حاول مرة ثانية أو أرسل نص.");
+                    return;
+                }
+            } catch (voiceErr) {
+                console.error('Voice transcription error:', voiceErr.message);
+                await sendMessage(phoneNumber, "عذراً، حدث خطأ في معالجة الرسالة الصوتية. أرسل رسالة نصية.");
+                return;
+            }
+        }
+        
         console.log(`Received from ${phoneNumber}: ${messageText}`);
 
         if (!messageText.trim()) return;
