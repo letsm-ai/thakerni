@@ -92,14 +92,16 @@ async function initWhatsApp() {
         sock.ev.on('messages.upsert', async ({ messages, type }) => {
             if (type === 'notify') {
                 for (const message of messages) {
-                    // Skip status broadcasts and group messages
+                    // Skip status broadcasts, groups, newsletters
                     const jid = message.key.remoteJid || '';
                     if (jid === 'status@broadcast' || jid.endsWith('@g.us') || jid.endsWith('@newsletter')) {
                         continue;
                     }
-                    // Only respond to messages from the owner (self-chat)
-                    // fromMe = true means the owner sent it
-                    if (!message.key.fromMe || !message.message) {
+                    // Only respond in SELF-CHAT (owner messaging themselves)
+                    // Self-chat jid = owner's own number@s.whatsapp.net
+                    const ownerJid = connectedUser?.id?.split(':')[0] + '@s.whatsapp.net';
+                    const isSelfChat = jid === ownerJid;
+                    if (!isSelfChat || !message.key.fromMe || !message.message) {
                         continue;
                     }
                     await handleIncomingMessage(message);
