@@ -92,18 +92,28 @@ async function initWhatsApp() {
         sock.ev.on('messages.upsert', async ({ messages, type }) => {
             if (type === 'notify') {
                 for (const message of messages) {
-                    // Skip status broadcasts, groups, newsletters
                     const jid = message.key.remoteJid || '';
-                    if (jid === 'status@broadcast' || jid.endsWith('@g.us') || jid.endsWith('@newsletter')) {
+                    const fromMe = message.key.fromMe;
+                    
+                    // Debug log every message
+                    const ownerNum = connectedUser?.id?.split(':')[0] || '';
+                    console.log(`[MSG] jid=${jid} | fromMe=${fromMe} | ownerNum=${ownerNum} | participant=${message.key.participant || 'none'} | hasMsg=${!!message.message}`);
+                    
+                    // Skip status broadcasts, groups, newsletters
+                    if (jid === 'status@broadcast' || jid.endsWith('@g.us') || jid.endsWith('@newsletter') || jid.endsWith('@lid')) {
                         continue;
                     }
-                    // Only respond in SELF-CHAT (owner messaging themselves)
-                    // Self-chat jid = owner's own number@s.whatsapp.net
-                    const ownerJid = connectedUser?.id?.split(':')[0] + '@s.whatsapp.net';
-                    const isSelfChat = jid === ownerJid;
-                    if (!isSelfChat || !message.key.fromMe || !message.message) {
+                    
+                    // Only respond in SELF-CHAT
+                    // Self-chat: fromMe=true AND remoteJid contains the owner's number
+                    const jidNumber = jid.split('@')[0].split(':')[0];
+                    const isSelfChat = fromMe && (jidNumber === ownerNum);
+                    
+                    if (!isSelfChat || !message.message) {
                         continue;
                     }
+                    
+                    console.log(`[SELF-CHAT] Processing message from owner`);
                     await handleIncomingMessage(message);
                 }
             }
