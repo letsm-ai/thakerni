@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { calendarApi, googleCalendarApi } from '../lib/api';
 import { Plus, Trash, Clock, CalendarBlank, GoogleLogo, ArrowsClockwise, Link, LinkBreak, CloudArrowDown, CloudArrowUp, Globe } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { Calendar } from '../components/ui/calendar';
 import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
@@ -370,6 +370,9 @@ const CalendarPage = () => {
             <DialogTitle className="text-xl font-semibold text-slate-900 font-heading">
               Create New Event
             </DialogTitle>
+            <DialogDescription className="text-sm text-slate-500">
+              Add a new event to your calendar
+            </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreateEvent} className="space-y-4 mt-4">

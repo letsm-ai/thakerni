@@ -94,6 +94,14 @@ Build an AI assistant SaaS platform with:
 - [x] Replaced index-as-key patterns in Landing, Profile, AdminUsers
 - [x] Refactored server.py from 2144 lines to 79-line orchestrator
 
+### Google Calendar Integration (Bidirectional Sync)
+- OAuth2 flow: each user connects their own Google Calendar
+- Pull events from Google Calendar to local
+- Push local events to Google Calendar
+- Create events simultaneously in both calendars
+- Visual indicators: "Google" badge and "Synced" badge on events
+- Auto-refresh of expired tokens, graceful disconnect
+
 ## Backlog
 - P2: Add actual video to demo modal
 - P3: Implement team calendar view for shared tasks/reminders
