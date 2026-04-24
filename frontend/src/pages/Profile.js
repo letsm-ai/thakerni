@@ -266,7 +266,7 @@ const Profile = () => {
                       <h4 className="font-semibold text-slate-900">{plan.name}</h4>
                       {isCurrent && <span className="text-xs bg-violet-600 text-white px-2 py-0.5 rounded-full">Current</span>}
                     </div>
-                    <p className="text-2xl font-bold text-slate-900 mt-1">${plan.price}<span className="text-sm font-normal text-slate-500">/mo</span></p>
+                    <p className="text-2xl font-bold text-slate-900 mt-1">{plan.price} <span className="text-sm font-normal text-slate-500">{plan.currency === 'sar' ? (isRTL ? 'ريال/شهرياً' : 'SAR/mo') : `${plan.currency}/mo`}</span></p>
                   </div>
                   {isCurrent ? (
                     <div className="text-sm text-violet-600 font-medium">Active</div>

@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 from datetime import datetime, timezone, timedelta
-from database import db, EMERGENT_LLM_KEY
+from database import db, EMERGENT_LLM_KEY, SUBSCRIPTION_PLANS
 from auth_helpers import get_current_user
 from models import ChatMessageCreate, ChatMessageResponse, ConversationResponse, GuestChatRequest
 from typing import Optional
@@ -222,6 +222,24 @@ async def parse_and_create_from_ai(user_message: str, user: dict, ai_response: s
 
 @chat_router.post("/chat/message", response_model=ChatMessageResponse)
 async def send_chat_message(message: ChatMessageCreate, user: dict = Depends(get_current_user)):
+    # Rate limit check
+    user_doc = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0})
+    subscription = user_doc.get("subscription", "free") if user_doc else "free"
+    plan = SUBSCRIPTION_PLANS.get(subscription, SUBSCRIPTION_PLANS["free"])
+    daily_limit = plan["limits"].get("max_messages_daily", 10)
+
+    if daily_limit > 0:
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_count = await db.messages.count_documents({
+            "user_id": user["user_id"], "role": "user",
+            "created_at": {"$gte": today_start.isoformat()}
+        })
+        if today_count >= daily_limit:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Daily message limit reached ({daily_limit}). Upgrade your plan for more messages."
+            )
+
     conversation_id = message.conversation_id or f"conv_{uuid.uuid4().hex[:12]}"
 
     conversation = await db.conversations.find_one(

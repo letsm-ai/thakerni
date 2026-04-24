@@ -383,3 +383,57 @@ async def admin_audit_logs(page: int = 1, limit: int = 30, user: dict = Depends(
 @admin_router.get("/roles")
 async def admin_get_roles(user: dict = Depends(require_permission("roles"))):
     return {"roles": {k: list(v) for k, v in ROLE_PERMISSIONS.items()}}
+
+
+# ══════════════════════════════════════════
+#  USAGE & COST TRACKING
+# ══════════════════════════════════════════
+
+@admin_router.get("/usage")
+async def admin_get_usage(user: dict = Depends(require_permission("analytics"))):
+    """Get per-user usage stats and estimated costs for admin dashboard."""
+    db = _db()
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    # Estimated cost per message (GPT-5.2 ~$0.005/msg, Whisper ~$0.006/min)
+    COST_PER_MSG = 0.005
+    COST_PER_VOICE = 0.01
+
+    users = await db.users.find({}, {"_id": 0, "user_id": 1, "email": 1, "name": 1, "subscription": 1}).to_list(1000)
+
+    usage_data = []
+    total_cost_month = 0
+
+    for u in users:
+        uid = u["user_id"]
+        sub = u.get("subscription", "free")
+
+        msgs_today = await db.messages.count_documents({"user_id": uid, "role": "user", "created_at": {"$gte": today_start.isoformat()}})
+        msgs_month = await db.messages.count_documents({"user_id": uid, "role": "user", "created_at": {"$gte": month_start.isoformat()}})
+        wa_msgs_month = await db.whatsapp_messages.count_documents({"user_id": uid, "created_at": {"$gte": month_start.isoformat()}})
+
+        est_cost = round((msgs_month * COST_PER_MSG) + (wa_msgs_month * COST_PER_VOICE), 3)
+        total_cost_month += est_cost
+
+        usage_data.append({
+            "user_id": uid,
+            "email": u.get("email", ""),
+            "name": u.get("name", ""),
+            "subscription": sub,
+            "messages_today": msgs_today,
+            "messages_this_month": msgs_month,
+            "whatsapp_messages_month": wa_msgs_month,
+            "estimated_cost_usd": est_cost
+        })
+
+    # Sort by cost descending
+    usage_data.sort(key=lambda x: x["estimated_cost_usd"], reverse=True)
+
+    return {
+        "users": usage_data,
+        "total_estimated_cost_usd": round(total_cost_month, 2),
+        "month": now.strftime("%B %Y"),
+        "pricing": {"cost_per_message": COST_PER_MSG, "cost_per_voice": COST_PER_VOICE}
+    }

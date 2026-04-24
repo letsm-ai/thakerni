@@ -221,9 +221,9 @@ const Landing = () => {
 
   // ── Pricing plans ──
   const plans = [
-    { name: t('Free', 'مجاني'), price: '$0', desc: t('Perfect for trying Letsm AI', 'مثالي لتجربة Letsm AI'), features: ['5 Active Tasks', '3 Conversations/day', 'Basic Reminders', 'Email Support'], cta: t('Start Free', 'ابدأ مجاناً'), pop: false },
-    { name: t('Pro', 'احترافي'), price: '$9.99', period: t('/mo', '/شهرياً'), desc: t('For individuals who want more', 'للأفراد الذين يريدون المزيد'), features: ['Unlimited Tasks', 'Unlimited Conversations', 'Voice Input', 'Advanced Analytics', 'Priority Support', 'Unlimited History'], cta: t('Subscribe Now', 'اشترك الآن'), pop: true },
-    { name: t('Business', 'أعمال'), price: '$29.99', period: t('/mo', '/شهرياً'), desc: t('For teams and power users', 'للفرق والمستخدمين المتقدمين'), features: ['All Pro Features', 'WhatsApp Integration', 'Team up to 10', 'Custom API', 'Account Manager', 'Advanced Analytics'], cta: t('Start Business Trial', 'ابدأ تجربة الأعمال'), pop: false },
+    { name: t('Free', 'مجاني'), price: '0', period: t(' SAR', ' ريال'), desc: t('Perfect for trying Letsm AI', 'مثالي لتجربة Letsm AI'), features: ['10 Messages/day', '5 Active Tasks', 'Basic Reminders', 'Email Support'], cta: t('Start Free', 'ابدأ مجاناً'), pop: false },
+    { name: t('Pro', 'برو'), price: '20', period: t(' SAR/mo', ' ريال/شهرياً'), desc: t('For individuals who want more', 'للأفراد الذين يريدون المزيد'), features: ['Unlimited Messages', 'Unlimited Tasks', 'Voice Input', 'Advanced Analytics', 'Priority Support', 'Unlimited History'], cta: t('Subscribe Now', 'اشترك الآن'), pop: true },
+    { name: t('Business', 'بزنس'), price: '50', period: t(' SAR/mo', ' ريال/شهرياً'), desc: t('For teams and power users', 'للفرق والمستخدمين المتقدمين'), features: ['All Pro Features', 'WhatsApp Integration', 'Team up to 10', 'Custom API', 'Account Manager', 'Advanced Analytics'], cta: t('Start Business Trial', 'ابدأ تجربة الأعمال'), pop: false },
   ];
 
   const heroImage = "https://static.prod-images.emergentagent.com/jobs/9d301dcd-e3e4-482d-9d3a-1c2d6b41093f/images/c20506ad820af18fca8db646421f81d14372424f9f9dfdbec4992513f7a1d9d2.png";

@@ -103,6 +103,23 @@ Build an AI assistant SaaS platform with:
 - Visual indicators: "Google" badge and "Synced" badge on events
 - Auto-refresh of expired tokens, graceful disconnect
 
+### WhatsApp Multi-User Bot System
+- Single bot number (Business) serves all subscribers
+- Users link their WhatsApp by sending a code (LINK-XXXXXX) to the bot
+- Bot verifies user, creates profile, responds with AI
+- Smart memory: conversation history (15 msgs), user profile, date awareness
+- Voice message support via Whisper transcription (ogg → mp3 → text)
+- Rate limiting: Free=10 msgs/day, Pro/Business=500/day (shown as "unlimited")
+- Unregistered users get signup prompt
+- Admin panel: bot QR connection + usage/cost tracking per user
+
+### Subscription & Pricing (SAR)
+- Free: 0 SAR — 10 messages/day, 5 tasks
+- Pro: 20 SAR/month — unlimited messages, voice, analytics
+- Business: 50 SAR/month — all Pro + WhatsApp + Team + API
+- Admin usage dashboard: per-user message counts + estimated costs
+- Rate limiting enforced on chat and WhatsApp endpoints
+
 ## Backlog
 - P2: Add actual video to demo modal
 - P3: Implement team calendar view for shared tasks/reminders
