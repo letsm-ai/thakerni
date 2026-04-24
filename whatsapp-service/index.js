@@ -89,7 +89,13 @@ async function initWhatsApp() {
         sock.ev.on('messages.upsert', async ({ messages, type }) => {
             if (type === 'notify') {
                 for (const message of messages) {
-                    if (!message.key.fromMe && message.message) {
+                    // Skip status broadcasts and group messages
+                    const jid = message.key.remoteJid || '';
+                    if (jid === 'status@broadcast' || jid.endsWith('@g.us') || jid.endsWith('@newsletter')) {
+                        continue;
+                    }
+                    // Process private chat messages (including from self for testing)
+                    if (message.message) {
                         await handleIncomingMessage(message);
                     }
                 }
