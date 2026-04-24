@@ -94,10 +94,12 @@ async function initWhatsApp() {
                     if (jid === 'status@broadcast' || jid.endsWith('@g.us') || jid.endsWith('@newsletter')) {
                         continue;
                     }
-                    // Process private chat messages (including from self for testing)
-                    if (message.message) {
-                        await handleIncomingMessage(message);
+                    // Only respond to messages from the owner (self-chat)
+                    // fromMe = true means the owner sent it
+                    if (!message.key.fromMe || !message.message) {
+                        continue;
                     }
+                    await handleIncomingMessage(message);
                 }
             }
         });
