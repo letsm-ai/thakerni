@@ -59,6 +59,18 @@ export const calendarApi = {
   deleteEvent: (eventId) => api.delete(`/calendar/events/${eventId}`),
 };
 
+// Google Calendar API
+export const googleCalendarApi = {
+  getStatus: () => api.get('/calendar/google/status'),
+  connect: () => api.get('/calendar/google/connect'),
+  disconnect: () => api.post('/calendar/google/disconnect'),
+  getEvents: (params) => api.get('/calendar/google/events', { params }),
+  createEvent: (event) => api.post('/calendar/google/events', event),
+  deleteEvent: (eventId) => api.delete(`/calendar/google/events/${eventId}`),
+  syncPush: () => api.post('/calendar/google/sync/push'),
+  syncPull: () => api.post('/calendar/google/sync/pull'),
+};
+
 // WhatsApp API
 export const whatsappApi = {
   getStatus: () => api.get('/whatsapp/status'),

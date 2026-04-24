@@ -34,6 +34,7 @@ from routes.services import services_router
 from routes.email import email_router, send_all_weekly_digests
 from routes.admin import admin_router
 from routes.teams import team_router
+from routes.google_calendar import gcal_router
 
 # ── Create App ──
 app = FastAPI(title="Letsm AI - AI Assistant Platform")
@@ -49,6 +50,7 @@ app.include_router(services_router)
 app.include_router(email_router)
 app.include_router(admin_router)
 app.include_router(team_router)
+app.include_router(gcal_router)
 
 # ── CORS ──
 app.add_middleware(
