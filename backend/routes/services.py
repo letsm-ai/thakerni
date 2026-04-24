@@ -233,37 +233,128 @@ async def stripe_webhook(request: Request):
 
 # ==================== WHATSAPP ====================
 
+async def _get_wa_user_profile(phone: str) -> dict:
+    """Get or create a WhatsApp user profile for memory/personalization."""
+    profile = await db.wa_profiles.find_one({"phone": phone}, {"_id": 0})
+    if not profile:
+        profile = {
+            "phone": phone,
+            "name": None,
+            "preferences": [],
+            "facts": [],
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.wa_profiles.insert_one(profile)
+    return profile
+
+
+async def _get_wa_history(phone: str, limit: int = 20) -> list:
+    """Get recent WhatsApp conversation history for context."""
+    messages = await db.whatsapp_messages.find(
+        {"phone_number": phone}, {"_id": 0}
+    ).sort("created_at", -1).to_list(limit)
+    messages.reverse()
+    return messages
+
+
+async def _update_wa_profile(phone: str, ai_response: str, user_message: str):
+    """Extract and save user facts/preferences from conversation."""
+    # Simple extraction: if AI learned something about the user, save it
+    lower = user_message.lower()
+    updates = {}
+
+    # Detect name
+    name_hints = ['اسمي', 'انا', 'أنا', 'my name is', "i'm ", 'i am ']
+    for hint in name_hints:
+        if hint in lower:
+            parts = user_message.split(hint, 1)
+            if len(parts) > 1:
+                name_candidate = parts[1].strip().split()[0:2]
+                name = ' '.join(name_candidate).strip('.,!؟')
+                if len(name) > 1:
+                    updates["name"] = name
+                    break
+
+    if updates:
+        await db.wa_profiles.update_one({"phone": phone}, {"$set": updates})
+
+
 @services_router.post("/whatsapp/ai")
 async def whatsapp_ai_process(body: WhatsAppAIRequest):
     session_id = f"wa_{body.phone_number}"
+
+    # Get user profile and conversation history
+    profile = await _get_wa_user_profile(body.phone_number)
+    history = await _get_wa_history(body.phone_number, limit=20)
+
+    # Build context from history
+    history_text = ""
+    if history:
+        recent = history[-15:]  # Last 15 exchanges
+        for msg in recent:
+            history_text += f"User: {msg.get('user_message', '')}\nAssistant: {msg.get('ai_response', '')}\n\n"
+
+    # Current date/time info
+    now = datetime.now(timezone.utc)
+    date_info = now.strftime("%A, %B %d, %Y at %I:%M %p UTC")
+    date_info_ar = now.strftime("%Y-%m-%d %H:%M")
+
+    # User profile context
+    profile_context = ""
+    if profile.get("name"):
+        profile_context += f"User's name: {profile['name']}. "
+    if profile.get("facts"):
+        profile_context += f"Known facts: {', '.join(profile['facts'][-5:])}. "
+
+    system_prompt = f"""You are Letsm AI, a smart personal WhatsApp assistant for this specific user. You have memory and context.
+
+CURRENT DATE & TIME: {date_info} ({date_info_ar})
+Today is {now.strftime('%A')}. Use this for any time-related requests (today, tomorrow, this week, etc.).
+
+USER PROFILE: {profile_context if profile_context else 'New user - learn about them through conversation.'}
+
+CONVERSATION HISTORY (recent messages):
+{history_text if history_text else 'No previous messages - this is the start of the conversation.'}
+
+RULES:
+1. ALWAYS detect and respond in the user's language. If Arabic, respond in Arabic. If English, respond in English.
+2. You have FULL conversation history above. Use it to understand context. If the user says "1" or "2" or any number, look at your LAST message to understand what options you gave them.
+3. When the user asks to set reminders or tasks, use the CURRENT DATE above to calculate the correct date/time. "Today" = {now.strftime('%Y-%m-%d')}, "Tomorrow" = {(now + timedelta(days=1)).strftime('%Y-%m-%d')}.
+4. Keep responses SHORT and WhatsApp-friendly. Use *bold* for emphasis.
+5. Remember everything the user tells you about themselves (name, habits, preferences).
+6. Do NOT ask unnecessary questions. If the user says "ذكرني اتصل بزوجتي الساعة 10" - confirm and create the reminder directly.
+7. When giving options, use simple text not numbered lists. If you must use numbers, remember them in context.
+8. Be proactive - suggest helpful follow-ups based on what you know about the user.
+
+أنت مساعد ذكي شخصي عبر واتساب. لديك ذاكرة كاملة للمحادثات السابقة. استخدم السياق دائماً.
+التاريخ الحالي: {date_info_ar}"""
+
     try:
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY, session_id=session_id,
-            system_message="""You are Letsm AI, a WhatsApp-based AI assistant. Users are chatting with you via WhatsApp.
-
-You help with:
-- Task management (create, list, complete tasks)
-- Reminders (set and manage)
-- General questions and productivity tips
-- Scheduling assistance
-
-Keep responses short and WhatsApp-friendly (use *bold* for emphasis, avoid long paragraphs).
-If the user writes in Arabic, respond in Arabic. Match their language.
-
-أنت مساعد ذكي عبر واتساب. إذا كتب المستخدم بالعربية، أجب بالعربية."""
+            system_message=system_prompt
         )
         chat.with_model("openai", "gpt-5.2")
-        user_message = UserMessage(text=body.message)
-        ai_response = await chat.send_message(user_message)
+        user_message_obj = UserMessage(text=body.message)
+        ai_response = await chat.send_message(user_message_obj)
 
+        # Save message to history
         await db.whatsapp_messages.insert_one({
-            "phone_number": body.phone_number, "user_message": body.message,
-            "ai_response": ai_response, "created_at": datetime.now(timezone.utc).isoformat()
+            "phone_number": body.phone_number,
+            "user_message": body.message,
+            "ai_response": ai_response,
+            "created_at": datetime.now(timezone.utc).isoformat()
         })
+
+        # Update user profile with learned info
+        await _update_wa_profile(body.phone_number, ai_response, body.message)
+
         return {"response": ai_response, "success": True}
     except Exception as e:
         logger.error(f"WhatsApp AI error: {str(e)}")
-        return {"response": "I'm having trouble right now. Please try again in a moment.", "success": False}
+        if "budget" in str(e).lower() or "exceeded" in str(e).lower():
+            return {"response": "عذراً، خدمة الذكاء الاصطناعي غير متاحة حالياً. حاول لاحقاً.", "success": False}
+        return {"response": "عذراً، حدث خطأ. حاول مرة ثانية.", "success": False}
 
 
 @services_router.get("/whatsapp/status")
