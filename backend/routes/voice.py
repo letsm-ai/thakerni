@@ -26,10 +26,29 @@ async def transcribe_voice(file: UploadFile = File(...)):
         tmp.write(content)
         tmp_path = tmp.name
 
+    # Convert ogg/opus to mp3 (Whisper doesn't support ogg)
+    mp3_path = None
+    file_to_transcribe = tmp_path
+    if suffix.lower() in ('.ogg', '.opus', '.oga'):
+        mp3_path = tmp_path.replace(suffix, '.mp3')
+        try:
+            import subprocess
+            result = subprocess.run(
+                ['ffmpeg', '-i', tmp_path, '-y', '-ar', '16000', '-ac', '1', mp3_path],
+                capture_output=True, text=True, timeout=15
+            )
+            if result.returncode == 0 and os.path.exists(mp3_path):
+                file_to_transcribe = mp3_path
+                logger.info("Converted ogg to mp3 successfully")
+            else:
+                logger.error(f"ffmpeg error: {result.stderr[:200]}")
+        except Exception as e:
+            logger.error(f"Conversion error: {e}")
+
     try:
         stt = OpenAISpeechToText(api_key=EMERGENT_LLM_KEY)
 
-        with open(tmp_path, "rb") as audio_file:
+        with open(file_to_transcribe, "rb") as audio_file:
             response = await stt.transcribe(
                 file=audio_file,
                 model="whisper-1",
@@ -45,3 +64,5 @@ async def transcribe_voice(file: UploadFile = File(...)):
         return {"text": "", "success": False, "error": str(e)[:100]}
     finally:
         os.unlink(tmp_path)
+        if mp3_path and os.path.exists(mp3_path):
+            os.unlink(mp3_path)

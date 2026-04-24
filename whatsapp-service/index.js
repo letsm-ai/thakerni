@@ -137,7 +137,12 @@ async function initWhatsApp() {
 
 async function handleIncomingMessage(message) {
     try {
-        const phoneNumber = message.key.remoteJid.replace('@s.whatsapp.net', '');
+        const rawJid = message.key.remoteJid;
+        // For self-chat: use the owner's phone number, not LID
+        const ownerNum = connectedUser?.id?.split(':')[0] || rawJid.replace('@s.whatsapp.net', '').replace('@lid', '');
+        const phoneNumber = ownerNum;
+        // Reply to the same jid the message came from
+        const replyJid = rawJid;
         let messageText = message.message.conversation ||
                            message.message.extendedTextMessage?.text || '';
         
@@ -169,12 +174,12 @@ async function handleIncomingMessage(message) {
                     messageText = transcribeRes.data.text;
                     console.log(`Transcribed: ${messageText}`);
                 } else {
-                    await sendMessage(phoneNumber, "عذراً، ما قدرت أفهم الرسالة الصوتية. حاول مرة ثانية أو أرسل نص.");
+                    await sendMessage(replyJid, "عذراً، ما قدرت أفهم الرسالة الصوتية. حاول مرة ثانية أو أرسل نص.");
                     return;
                 }
             } catch (voiceErr) {
                 console.error('Voice transcription error:', voiceErr.message);
-                await sendMessage(phoneNumber, "عذراً، حدث خطأ في معالجة الرسالة الصوتية. أرسل رسالة نصية.");
+                await sendMessage(replyJid, "عذراً، حدث خطأ في معالجة الرسالة الصوتية. أرسل رسالة نصية.");
                 return;
             }
         }
@@ -187,7 +192,7 @@ async function handleIncomingMessage(message) {
         const text = messageText.toLowerCase().trim();
         if (text === 'help' || text === '?' || text === 'commands') {
             const helpText = `*Letsm AI WhatsApp Bot*\n\nSend me any message and I'll help you with tasks, reminders, scheduling, and more!\n\n*Examples:*\n- Remind me to call Ahmed at 3pm\n- Create a task to review budget\n- What should I do today?\n- Help me plan my week\n\nI understand English and Arabic!`;
-            await sendMessage(phoneNumber, helpText);
+            await sendMessage(replyJid, helpText);
             return;
         }
 
@@ -199,14 +204,13 @@ async function handleIncomingMessage(message) {
             }, { timeout: 30000 });
 
             if (response.data && response.data.response) {
-                await sendMessage(phoneNumber, response.data.response);
+                await sendMessage(replyJid, response.data.response);
             } else {
-                await sendMessage(phoneNumber, "I'm processing your request. Please try again in a moment.");
+                await sendMessage(replyJid, "I'm processing your request. Please try again in a moment.");
             }
         } catch (aiError) {
             console.error('AI backend error:', aiError.message);
-            // Fallback to basic response
-            await sendMessage(phoneNumber, "I'm having trouble connecting to the AI service right now. Send *help* to see available commands.");
+            await sendMessage(replyJid, "عذراً، حدث خطأ. حاول مرة ثانية.");
         }
     } catch (error) {
         console.error('Error handling incoming message:', error);
