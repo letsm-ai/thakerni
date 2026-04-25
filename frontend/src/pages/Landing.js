@@ -235,8 +235,8 @@ const Landing = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 md:px-12 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-violet-600 rounded-xl flex items-center justify-center text-white font-bold text-sm">L</div>
-            <span className="font-bold text-lg text-gray-900">Letsm <span className="text-violet-600">AI</span></span>
+            <img src="/logo.jpeg" alt="AI by Let's M" className="h-9 w-auto rounded-lg" />
+            <span className="font-bold text-lg text-gray-900">Let's M <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">AI</span></span>
           </Link>
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" onClick={(e) => smoothScroll(e, 'features')} className="text-gray-500 hover:text-gray-900 text-sm font-medium transition-colors">{t('Features', 'المميزات')}</a>
@@ -577,7 +577,7 @@ const Landing = () => {
       {/* ── FOOTER ── */}
       <footer className="py-12 border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2.5"><div className="w-8 h-8 bg-violet-600 rounded-lg flex items-center justify-center text-white font-bold text-xs">L</div><span className="font-bold text-gray-900">Letsm <span className="text-violet-600">AI</span></span></div>
+          <div className="flex items-center gap-2.5"><img src="/logo.jpeg" alt="AI by Let's M" className="h-8 w-auto rounded-lg" /><span className="font-bold text-gray-900">Let's M <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">AI</span></span></div>
           <div className="flex items-center gap-6 text-sm text-gray-400">
             <a href="#privacy" className="hover:text-gray-600">{t('Privacy', 'الخصوصية')}</a>
             <a href="#" className="hover:text-gray-600">{t('Terms', 'الشروط')}</a>

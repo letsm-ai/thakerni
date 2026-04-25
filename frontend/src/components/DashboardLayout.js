@@ -265,11 +265,11 @@ const Sidebar = ({ onItemClick }) => {
       <div className="p-6 border-b border-slate-200">
         <Link to="/dashboard" className="flex items-center gap-3" data-testid="sidebar-logo">
           <img
-            src="https://static.prod-images.emergentagent.com/jobs/9d301dcd-e3e4-482d-9d3a-1c2d6b41093f/images/7432755b702d2a2a26f7a6ef3b6c0c1c2e834acae24098a23273963d9cd5719c.png"
-            alt="Letsm AI"
-            className="h-8 w-auto"
+            src="/logo.jpeg"
+            alt="AI by Let's M"
+            className="h-8 w-auto rounded-lg"
           />
-          <span className="font-bold text-slate-900 font-heading text-lg">Letsm AI</span>
+          <span className="font-bold text-slate-900 font-heading text-lg">Let's M <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">AI</span></span>
         </Link>
       </div>
 
@@ -361,11 +361,11 @@ const DashboardLayout = ({ children }) => {
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-50">
         <Link to="/dashboard" className="flex items-center gap-2">
           <img
-            src="https://static.prod-images.emergentagent.com/jobs/9d301dcd-e3e4-482d-9d3a-1c2d6b41093f/images/7432755b702d2a2a26f7a6ef3b6c0c1c2e834acae24098a23273963d9cd5719c.png"
-            alt="Letsm AI"
-            className="h-7 w-auto"
+            src="/logo.jpeg"
+            alt="AI by Let's M"
+            className="h-7 w-auto rounded-lg"
           />
-          <span className="font-bold text-slate-900 font-heading">Letsm AI</span>
+          <span className="font-bold text-slate-900 font-heading">Let's M <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">AI</span></span>
         </Link>
 
         <div className="flex items-center gap-2">

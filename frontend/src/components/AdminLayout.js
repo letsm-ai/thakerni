@@ -51,7 +51,7 @@ export default function AdminLayout() {
       <aside className={`w-60 bg-slate-900 text-white flex flex-col fixed h-full z-30 ${isRTL ? 'right-0' : 'left-0'}`} data-testid="admin-sidebar">
         <div className="px-5 py-5 border-b border-slate-700">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-violet-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">L</div>
+            <img src="/logo.jpeg" alt="AI by Let's M" className="h-8 w-auto rounded-lg" />
             <span className="font-semibold text-sm">{isRTL ? 'لوحة الإدارة' : 'Letsm Admin'}</span>
           </div>
           <div className="mt-2 text-xs text-slate-400 capitalize">
