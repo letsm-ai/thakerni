@@ -165,7 +165,7 @@ const TasksTab = ({ members, t }) => {
 
   const load = useCallback(async () => {
     try { const res = await teamApi.getTasks(); setTasks(res.data.tasks); } catch (e) { console.error('Failed to load team tasks:', e); }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const create = async () => {
@@ -238,7 +238,7 @@ const RemindersTab = ({ t }) => {
 
   const load = useCallback(async () => {
     try { const res = await teamApi.getReminders(); setReminders(res.data.reminders); } catch (e) { console.error('Failed to load team reminders:', e); }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const create = async () => {
@@ -289,7 +289,7 @@ const ChatTab = ({ user, t }) => {
 
   const load = useCallback(async () => {
     try { const res = await teamApi.getMessages(1); setMessages(res.data.messages); } catch (e) { console.error('Failed to load team messages:', e); }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { load(); const i = setInterval(load, 5000); return () => clearInterval(i); }, [load]);
   useEffect(() => { if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [messages]);

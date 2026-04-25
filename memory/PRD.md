@@ -86,14 +86,17 @@ Build an AI assistant SaaS platform with:
 - Landing page (atoms.world aesthetic), smooth scroll, back-to-top
 - Markdown bold rendering, Demo walkthrough modal, Voice input
 
-## Security & Code Quality (Completed)
+## Code Quality (Completed)
 - [x] Removed hardcoded credentials from all test files
 - [x] Replaced localStorage with in-memory tokenStore for auth tokens
-- [x] Fixed missing React Hook dependencies (DashboardLayout, Chat, Profile)
+- [x] FloatingChat switched to sessionStorage (non-sensitive guest data)
+- [x] Fixed missing React Hook dependencies (DashboardLayout, Chat, Profile, Team, WhatsApp)
 - [x] Fixed empty catch blocks in Team.js
-- [x] Replaced index-as-key patterns in Landing, Profile, AdminUsers
+- [x] Replaced index-as-key patterns (Landing, Profile, AdminUsers, AdminBilling, AdminAudit)
 - [x] Refactored server.py from 2144 lines to 79-line orchestrator
-- [x] Full Arabic/RTL translation on ALL dashboard pages (Tasks, Reminders, Chat, Calendar, Statistics, WhatsApp, Profile)
+- [x] Broke circular import email.py ↔ server.py
+- [x] Refactored chat.py: split parse_and_create_from_ai (complexity 38) into 8 focused helpers
+- [x] Full Arabic/RTL translation on ALL dashboard + admin pages
 
 ### Google Calendar Integration (Bidirectional Sync)
 - OAuth2 flow: each user connects their own Google Calendar
