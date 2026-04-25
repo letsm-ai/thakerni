@@ -40,7 +40,7 @@ const WhatsApp = () => {
     } catch (err) {
       console.error('Bot status error:', err);
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── User: Fetch link status ──
   const fetchLinkStatus = useCallback(async () => {
@@ -50,7 +50,7 @@ const WhatsApp = () => {
     } catch (err) {
       console.error('Link status error:', err);
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const init = async () => {

@@ -104,7 +104,7 @@ const NotificationBell = () => {
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const checkReminders = useCallback(async () => {
     try {

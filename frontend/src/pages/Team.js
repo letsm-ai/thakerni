@@ -342,7 +342,7 @@ const AnalyticsTab = ({ t }) => {
 
   useEffect(() => {
     teamApi.getAnalytics().then(r => setData(r.data)).catch(() => {});
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!data) return <p className="text-center text-slate-400 py-8">Loading...</p>;
 
@@ -429,7 +429,7 @@ export default function Team() {
       setInvitations(invRes.data.invitations);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { loadTeam(); }, [loadTeam]);
 

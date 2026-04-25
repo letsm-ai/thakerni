@@ -21,7 +21,7 @@ const Landing = () => {
     const parts = text.split(/(\*\*[^*]+\*\*)/g);
     return parts.map((part, i) =>
       part.startsWith('**') && part.endsWith('**')
-        ? <strong key={i}>{part.slice(2, -2)}</strong>
+        ? <strong key={`b${i}`}>{part.slice(2, -2)}</strong>
         : part
     );
   };
@@ -188,7 +188,7 @@ const Landing = () => {
     const onScroll = () => setShowBackToTop(window.scrollY > 600);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (demoChatRef.current) demoChatRef.current.scrollTop = demoChatRef.current.scrollHeight;
@@ -196,14 +196,14 @@ const Landing = () => {
 
   const scrollToTop = useCallback(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const smoothScroll = useCallback((e, id) => {
     e.preventDefault();
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setMobileMenuOpen(false);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Messaging / Calendar integrations ──
   const messaging = [

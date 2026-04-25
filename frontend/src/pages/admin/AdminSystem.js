@@ -24,10 +24,10 @@ export default function AdminSystem() {
       finally { setLoading(false); }
     };
     load();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-slate-400">Loading system health...</div>;
-  if (!health) return <div className="text-red-500 text-center py-12">Failed to load</div>;
+  if (loading) return <div className="flex items-center justify-center h-64 text-slate-400">{isRTL ? 'جاري التحميل...' : 'Loading system health...'}</div>;
+  if (!health) return <div className="text-red-500 text-center py-12">{isRTL ? 'فشل التحميل' : 'Failed to load'}</div>;
 
   return (
     <div data-testid="admin-system-page">

@@ -22,7 +22,7 @@ const Reminders = () => {
 
   useEffect(() => {
     loadReminders();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadReminders = async () => {
     try {

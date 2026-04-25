@@ -8,7 +8,7 @@ import csv
 import io
 import httpx
 import logging
-import random
+import secrets
 import string
 
 from emergentintegrations.llm.chat import LlmChat, UserMessage
@@ -277,7 +277,7 @@ async def _check_wa_rate_limit(user_id: str, subscription: str) -> dict:
 
 @services_router.post("/whatsapp/generate-link-code")
 async def generate_link_code(user: dict = Depends(get_current_user)):
-    code = "LINK-" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    code = "LINK-" + ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
     await db.wa_link_codes.delete_many({"user_id": user["user_id"]})
     await db.wa_link_codes.insert_one({
         "code": code, "user_id": user["user_id"],

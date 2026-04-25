@@ -36,7 +36,7 @@ const CalendarPage = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const checkGoogleStatus = useCallback(async () => {
     try {

@@ -91,7 +91,7 @@ export default function AdminAnalytics() {
               <ResponsiveContainer width="50%" height={200}>
                 <PieChart>
                   <Pie data={countries} dataKey="users" nameKey="country" cx="50%" cy="50%" outerRadius={80} innerRadius={40}>
-                    {countries.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    {countries.map((c, i) => <Cell key={c.country || `cell-${i}`} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
                   <Tooltip />
                 </PieChart>
