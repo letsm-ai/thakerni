@@ -169,14 +169,21 @@ async def update_email_config(request: Request, user: dict = Depends(get_current
 
 @email_router.get("/digest-schedule")
 async def get_digest_schedule(user: dict = Depends(get_current_user)):
-    # Import scheduler from server to check job status
+    # Access scheduler without circular import — use lazy import from apscheduler
+    next_run = None
     try:
-        from server import scheduler
-        jobs = scheduler.get_jobs()
-        digest_job = next((j for j in jobs if j.id == "weekly_digest"), None)
-        next_run = str(digest_job.next_run_time) if digest_job else None
+        from apscheduler.schedulers.asyncio import AsyncIOScheduler
+        import gc
+        # Find the running scheduler instance via garbage collector
+        for obj in gc.get_referrers(AsyncIOScheduler):
+            if isinstance(obj, dict):
+                for v in obj.values():
+                    if isinstance(v, AsyncIOScheduler) and v.running:
+                        digest_job = v.get_job("weekly_digest")
+                        next_run = str(digest_job.next_run_time) if digest_job else None
+                        break
     except Exception:
-        next_run = None
+        pass
 
     last_log = await db.digest_logs.find_one(sort=[("timestamp", -1)], projection={"_id": 0})
     return {"scheduled": next_run is not None, "next_run": next_run, "last_run": last_log}

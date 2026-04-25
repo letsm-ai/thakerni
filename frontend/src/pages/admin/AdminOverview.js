@@ -39,7 +39,7 @@ export default function AdminOverview() {
       }
     };
     load();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) return <div className="flex items-center justify-center h-64 text-slate-400">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>;
   if (!data) return <div className="text-red-500 text-center py-12">{isRTL ? 'فشل تحميل البيانات' : 'Failed to load admin data'}</div>;

@@ -323,7 +323,7 @@ const Landing = () => {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {features.map((f, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: i * 0.08 }} viewport={{ once: true }}
+              <motion.div key={f.title || f.name || f.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: i * 0.08 }} viewport={{ once: true }}
                 className="bg-white border border-gray-200 rounded-3xl p-8 md:p-10" data-testid={`feature-card-${i}`}>
                 <div className={`w-14 h-14 ${f.color} rounded-2xl flex items-center justify-center mb-5`}><f.icon size={28} weight="duotone" /></div>
                 <h3 className="text-xl font-semibold mb-3 text-gray-900">{f.title}</h3>
@@ -344,7 +344,7 @@ const Landing = () => {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {advancedFeatures.map((f, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: i * 0.08 }} viewport={{ once: true }}
+              <motion.div key={f.title || f.name || f.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: i * 0.08 }} viewport={{ once: true }}
                 className="bg-white border border-gray-200 rounded-3xl p-8 md:p-10">
                 <div className="w-14 h-14 bg-violet-50 text-violet-600 rounded-2xl flex items-center justify-center mb-5"><f.icon size={28} weight="duotone" /></div>
                 <h3 className="text-xl font-semibold mb-3 text-gray-900">{f.title}</h3>
@@ -389,7 +389,7 @@ const Landing = () => {
             <div className="lg:col-span-2 space-y-4">
               <h3 className="font-semibold text-gray-900 text-lg mb-2">{t('Try These Examples:', 'جرّب هذه الأمثلة:')}</h3>
               {demoScenarios.map((s, i) => (
-                <button key={i} onClick={() => runScenario(i)} className={`w-full text-left p-5 rounded-2xl border transition-all ${activeScenario === i ? 'border-violet-400 bg-violet-50/50' : 'border-gray-200 hover:border-gray-300 bg-white'}`} data-testid={`demo-scenario-${i}`}>
+                <button key={s.title || s.label} onClick={() => runScenario(i)} className={`w-full text-left p-5 rounded-2xl border transition-all ${activeScenario === i ? 'border-violet-400 bg-violet-50/50' : 'border-gray-200 hover:border-gray-300 bg-white'}`} data-testid={`demo-scenario-${i}`}>
                   <div className="flex items-center gap-2.5 mb-1"><s.icon size={18} className="text-violet-600" /><span className="font-medium text-gray-900 text-sm">{s.label}</span></div>
                   <p className="text-sm text-gray-400">"{s.user}"</p>
                 </button>
@@ -445,13 +445,13 @@ const Landing = () => {
             <div className="bg-white border border-gray-200 rounded-3xl p-8 md:p-10">
               <div className="flex items-center gap-3 mb-6"><div className="w-12 h-12 bg-violet-50 rounded-2xl flex items-center justify-center"><ChatTeardrop size={24} className="text-violet-600" weight="duotone" /></div><div><h3 className="text-xl font-bold text-gray-900">{t('Messaging', 'المراسلة')}</h3><p className="text-sm text-gray-400">{t('Chat on your preferred app', 'تحدث عبر تطبيقك المفضل')}</p></div></div>
               <div className="grid grid-cols-2 gap-3">
-                {messaging.map((p, i) => (<div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"><div className="flex items-center gap-2.5"><p.icon size={20} className="text-gray-600" weight="fill" /><span className="text-sm font-medium text-gray-900">{p.name}</span></div>{!p.available && <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">{t('Soon', 'قريباً')}</span>}</div>))}
+                {messaging.map((p) => (<div key={p.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"><div className="flex items-center gap-2.5"><p.icon size={20} className="text-gray-600" weight="fill" /><span className="text-sm font-medium text-gray-900">{p.name}</span></div>{!p.available && <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">{t('Soon', 'قريباً')}</span>}</div>))}
               </div>
             </div>
             <div className="bg-white border border-gray-200 rounded-3xl p-8 md:p-10">
               <div className="flex items-center gap-3 mb-6"><div className="w-12 h-12 bg-violet-50 rounded-2xl flex items-center justify-center"><Calendar size={24} className="text-violet-600" weight="duotone" /></div><div><h3 className="text-xl font-bold text-gray-900">{t('Calendar', 'التقويم')}</h3><p className="text-sm text-gray-400">{t('Sync across all calendars', 'مزامنة عبر جميع التقويمات')}</p></div></div>
               <div className="grid grid-cols-2 gap-3">
-                {calendars.map((p, i) => (<div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"><span className="text-sm font-medium text-gray-900">{p.name}</span>{!p.available && <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">{t('Soon', 'قريباً')}</span>}</div>))}
+                {calendars.map((p) => (<div key={p.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"><span className="text-sm font-medium text-gray-900">{p.name}</span>{!p.available && <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">{t('Soon', 'قريباً')}</span>}</div>))}
               </div>
             </div>
           </div>
@@ -468,7 +468,7 @@ const Landing = () => {
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8" data-testid="testimonials-grid">
             {testimonials.map((tt, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: i * 0.08 }} viewport={{ once: true }}
+              <motion.div key={tt.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: i * 0.08 }} viewport={{ once: true }}
                 className="bg-white border border-gray-200 rounded-3xl p-8">
                 <p className="text-gray-500 mb-6 leading-relaxed">"{tt.quote}"</p>
                 <div className="flex items-center gap-3"><div className={`w-10 h-10 bg-gradient-to-br ${tt.bg} rounded-full flex items-center justify-center text-white text-sm font-bold`}>{tt.initials}</div><div><p className="font-semibold text-gray-900 text-sm">{tt.name}</p><p className="text-xs text-gray-400">{tt.role}</p></div></div>
@@ -487,7 +487,7 @@ const Landing = () => {
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16" data-testid="privacy-features">
             {privacyFeatures.map((f, i) => (
-              <div key={i} className="bg-white border border-gray-200 rounded-3xl p-8">
+              <div key={f.title || f.icon} className="bg-white border border-gray-200 rounded-3xl p-8">
                 <div className="w-12 h-12 bg-violet-50 rounded-2xl flex items-center justify-center mb-4"><f.icon size={24} className="text-violet-600" weight="duotone" /></div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">{f.title}</h3>
                 <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
@@ -498,8 +498,8 @@ const Landing = () => {
             <div>
               <h3 className="text-2xl font-bold text-gray-900 mb-6">{t('Our Commitment to You', 'التزامنا تجاهك')}</h3>
               <ul className="space-y-4">
-                {[t('Never sell your personal data to third parties', 'لن نبيع بياناتك لأطراف ثالثة'), t('No tracking across other websites or apps', 'لا تتبع عبر مواقع أخرى'), t('Regular security audits by independent experts', 'تدقيقات أمنية منتظمة'), t('Transparent incident reporting and communication', 'تقارير حوادث شفافة')].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3"><CheckCircle size={20} className="text-emerald-500 flex-shrink-0 mt-0.5" weight="fill" /><span className="text-gray-600">{item}</span></li>
+                {[t('Never sell your personal data to third parties', 'لن نبيع بياناتك لأطراف ثالثة'), t('No tracking across other websites or apps', 'لا تتبع عبر مواقع أخرى'), t('Regular security audits by independent experts', 'تدقيقات أمنية منتظمة'), t('Transparent incident reporting and communication', 'تقارير حوادث شفافة')].map((item, idx) => (
+                  <li key={idx} className="flex items-start gap-3"><CheckCircle size={20} className="text-emerald-500 flex-shrink-0 mt-0.5" weight="fill" /><span className="text-gray-600">{item}</span></li>
                 ))}
               </ul>
             </div>
@@ -526,7 +526,7 @@ const Landing = () => {
           </div>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {plans.map((plan, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: i * 0.1 }} viewport={{ once: true }}
+              <motion.div key={plan.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: i * 0.1 }} viewport={{ once: true }}
                 className={`relative rounded-3xl p-8 md:p-10 ${plan.pop ? 'bg-violet-600 text-white ring-4 ring-violet-200' : 'bg-white border border-gray-200'}`} data-testid={`pricing-plan-${i}`}>
                 {plan.pop && <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-white text-violet-600 text-xs font-bold px-4 py-1.5 rounded-full shadow-sm">{t('Most Popular', 'الأكثر شعبية')}</div>}
                 <h3 className={`text-xl font-semibold mb-1 ${plan.pop ? '' : 'text-gray-900'}`}>{plan.name}</h3>
@@ -544,7 +544,7 @@ const Landing = () => {
             <h3 className="text-3xl font-bold text-center mb-8">{t('Frequently Asked Questions', 'أسئلة شائعة')}</h3>
             <div className="space-y-3">
               {faqs.map((faq, i) => (
-                <div key={i} className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                <div key={faq.q} className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
                   <button onClick={() => setOpenFaq(openFaq === i ? null : i)} className="w-full flex items-center justify-between p-5 text-left" data-testid={`faq-${i}`}>
                     <h4 className="font-medium text-gray-900">{faq.q}</h4>
                     <CaretRight size={16} className={`text-gray-400 transition-transform ${openFaq === i ? 'rotate-90' : ''}`} />
@@ -568,7 +568,7 @@ const Landing = () => {
           </div>
           <div className="grid grid-cols-3 gap-8">
             {[{ v: '50K+', l: t('Active Users', 'مستخدم نشط') }, { v: '2M+', l: t('Tasks Created', 'مهمة مُنشأة') }, { v: '99.9%', l: t('Uptime', 'وقت التشغيل') }].map((s, i) => (
-              <div key={i} className="text-center"><p className="text-4xl md:text-5xl font-bold text-gray-900">{s.v}</p><p className="text-gray-400 mt-1">{s.l}</p></div>
+              <div key={s.v || s.l} className="text-center"><p className="text-4xl md:text-5xl font-bold text-gray-900">{s.v}</p><p className="text-gray-400 mt-1">{s.l}</p></div>
             ))}
           </div>
         </div>

@@ -54,8 +54,8 @@ export default function AdminAudit() {
               <tr><td colSpan={5} className="text-center py-8 text-slate-400">Loading...</td></tr>
             ) : logs.length === 0 ? (
               <tr><td colSpan={5} className="text-center py-8 text-slate-400">No audit logs yet</td></tr>
-            ) : logs.map((log, i) => (
-              <tr key={i} className="hover:bg-slate-50">
+            ) : logs.map((log) => (
+              <tr key={log.log_id || log.timestamp} className="hover:bg-slate-50">
                 <td className="px-4 py-2.5">
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${actionColor(log.action)}`}>{log.action?.replace('_', ' ')}</span>
                 </td>

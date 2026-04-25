@@ -96,8 +96,8 @@ export default function AdminBilling() {
               <tr><td colSpan={5} className="text-center py-8 text-slate-400">Loading...</td></tr>
             ) : payments.length === 0 ? (
               <tr><td colSpan={5} className="text-center py-8 text-slate-400">No payments found</td></tr>
-            ) : payments.map((p, i) => (
-              <tr key={i} className="hover:bg-slate-50">
+            ) : payments.map((p) => (
+              <tr key={p.transaction_id || p.session_id} className="hover:bg-slate-50">
                 <td className="px-4 py-2.5 font-mono text-xs text-slate-600">{p.user_id}</td>
                 <td className="px-4 py-2.5 font-medium text-slate-800">${p.amount?.toFixed(2) || '—'}</td>
                 <td className="px-4 py-2.5">

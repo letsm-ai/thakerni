@@ -16,14 +16,14 @@ const renderMd = (text) => {
   );
 };
 
+// Guest chat state — sessionStorage (non-sensitive, expires on tab close)
 const loadSaved = () => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    // Expire after 24 hours
     if (Date.now() - data.savedAt > 86400000) {
-      localStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(STORAGE_KEY);
       return null;
     }
     return data;
@@ -47,10 +47,10 @@ const FloatingChat = ({ language, isRTL }) => {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Persist to localStorage on every change
+  // Persist to sessionStorage on every change
   useEffect(() => {
     if (messages.length > 1 || sessionId) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
         messages, sessionId, msgCount, savedAt: Date.now()
       }));
     }

@@ -10,8 +10,8 @@ import requests
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://ai-functions-core.preview.emergentagent.com").rstrip("/")
 API = f"{BASE_URL}/api"
 
-DEMO_EMAIL = "demo@test.com"
-DEMO_PASSWORD = "Test123!"
+DEMO_EMAIL = os.environ.get("TEST_USER_EMAIL", "demo@test.com")
+DEMO_PASSWORD = os.environ.get("TEST_USER_PASSWORD", "Test123!")
 
 
 @pytest.fixture(scope="module")
