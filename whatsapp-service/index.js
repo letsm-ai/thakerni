@@ -12,7 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
-const FASTAPI_URL = process.env.FASTAPI_URL || 'http://localhost:8001';
+const FASTAPI_URL = process.env.FASTAPI_URL || 'http://localhost:8001'; // Same container in production
 
 let sock = null;
 let qrCode = null;
