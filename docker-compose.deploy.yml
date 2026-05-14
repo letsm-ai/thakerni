@@ -1,0 +1,17 @@
+# ============================================================
+# Letsm AI - Compose override for deploys (use prebuilt images)
+# Used by GitHub Actions; merged on top of docker-compose.prod.yml
+# Compose will use `image:` for `pull` and skip `build:` unless
+# `--build` is explicitly passed.
+# ============================================================
+version: "3.9"
+
+services:
+  backend:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX}-backend:${IMAGE_TAG:-latest}
+
+  frontend:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX}-frontend:${IMAGE_TAG:-latest}
+
+  whatsapp:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX}-whatsapp:${IMAGE_TAG:-latest}

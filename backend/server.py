@@ -36,6 +36,7 @@ from routes.admin import admin_router
 from routes.teams import team_router
 from routes.google_calendar import gcal_router
 from routes.voice import voice_router
+from routes.image_analysis import image_router
 
 # ── Create App ──
 app = FastAPI(title="Letsm AI - AI Assistant Platform")
@@ -53,6 +54,7 @@ app.include_router(admin_router)
 app.include_router(team_router)
 app.include_router(gcal_router)
 app.include_router(voice_router)
+app.include_router(image_router)
 
 # ── CORS ──
 app.add_middleware(

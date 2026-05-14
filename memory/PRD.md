@@ -123,6 +123,30 @@ Build an AI assistant SaaS platform with:
 - Admin usage dashboard: per-user message counts + estimated costs
 - Rate limiting enforced on chat and WhatsApp endpoints
 
+## Production Deployment Infrastructure (Feb 2026)
+Designed for Hostinger VPS — Ubuntu 24.04, 16 GB RAM, 4 vCPU.
+
+Files under `/app/`:
+- `Dockerfile.backend`, `Dockerfile.frontend`, `Dockerfile.whatsapp`
+- `docker-compose.prod.yml` — mongo + redis + backend + frontend + whatsapp + nginx + certbot + uptime-kuma
+- `docker-compose.deploy.yml` — CI/CD override (pre-built images from GHCR)
+- `nginx/letsm.ai.conf` + `nginx/nginx.conf` + `nginx/frontend.conf` — TLS, reverse proxy, rate limiting, security headers
+- `.github/workflows/deploy.yml` — push → build → GHCR → SSH deploy → smoke test
+- `scripts/server-setup.sh` — one-shot VPS hardening (UFW, Fail2ban, Docker, SSH, swap, user)
+- `scripts/init-letsencrypt.sh` — first-time SSL provisioning
+- `scripts/backup.sh` — daily Mongo + WhatsApp auth backup → Backblaze B2 with Telegram alerts
+- `scripts/restore.sh` — restore Mongo from B2 backup
+- `.env.production.example`, `.env.backup.example` — env templates
+- `RUNBOOK.md` — full operational guide (deploy, rollback, DR, troubleshooting, security checklist, cost tracking)
+- `DEPLOYMENT.md` — quick-start index
+
+Capacity estimate on the user's box:
+- ~7-9 GB RAM used at steady state → ~7 GB headroom
+- 200-500 concurrent users; total registered 5K-10K before scaling concerns
+- Cost: ~$20-35/month fixed + variable OpenAI usage
+
 ## Backlog
 - P2: Add actual video to demo modal
+- P2: User verification of Image Analysis + Sample Interactions Gallery + Plus Jakarta Sans font
+- P3: Split large React pages (Profile.js, CalendarPage.js) into smaller sub-components
 - P3: Implement team calendar view for shared tasks/reminders

@@ -458,6 +458,49 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* ═══ Sample Interactions Gallery ═══ */}
+      <section className="py-24 px-6 bg-gradient-to-b from-gray-50 to-white" data-testid="interactions-section">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <span className="text-cyan-600 font-medium text-sm">{t('See It In Action', 'شاهده بالعمل')}</span>
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mt-3 mb-4">{t('What You Can ', 'ماذا يمكنك ')}<span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-500 to-blue-600">{t('Ask', 'أن تسأل')}</span></h2>
+            <p className="text-lg text-gray-500">{t('Real conversations with your AI assistant', 'محادثات حقيقية مع مساعدك الذكي')}</p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              { gradient: 'from-cyan-500 to-blue-500', emoji: '🌅', title: t('Morning Briefing', 'ملخص الصباح'), user: t('"What\'s my plan for today?"', '"ايش خطتي اليوم؟"'), bot: t('"Good morning! You have 3 tasks due today: Team standup at 9am, Client proposal by 2pm, and Gym at 6pm. Your first reminder is in 45 minutes."', '"صباح الخير! عندك 3 مهام اليوم: اجتماع الفريق الساعة 9، عرض العميل قبل 2، والجم الساعة 6. أول تذكير بعد 45 دقيقة."') },
+              { gradient: 'from-violet-500 to-purple-500', emoji: '📋', title: t('Task Delegation', 'توزيع المهام'), user: t('"Create a task to review the budget report, high priority, due tomorrow"', '"أنشئ مهمة مراجعة تقرير الميزانية، أولوية عالية، بكرة"'), bot: t('"Done! Task created: Review budget report. Priority: High. Due: Tomorrow 9:00 AM. Want me to set a reminder too?"', '"تم! مهمة جديدة: مراجعة تقرير الميزانية. أولوية: عالية. الموعد: بكرة 9 صباحاً. تبي أسوي تذكير بعد؟"') },
+              { gradient: 'from-emerald-500 to-teal-500', emoji: '🤝', title: t('Meeting Prep', 'تحضير الاجتماع'), user: t('"Remind me 15 minutes before the client meeting"', '"ذكرني قبل اجتماع العميل بربع ساعة"'), bot: t('"Reminder set! I\'ll notify you at 1:45 PM, 15 minutes before your client meeting. I\'ll also prepare a summary of pending tasks."', '"تم! سأذكرك الساعة 1:45، قبل الاجتماع بربع ساعة. وسأجهز لك ملخص بالمهام المعلقة."') },
+              { gradient: 'from-orange-500 to-amber-500', emoji: '🛒', title: t('Shopping List', 'قائمة التسوق'), user: t('"Add to my shopping list: milk, eggs, bread, and coffee"', '"أضف لقائمة التسوق: حليب، بيض، خبز، وقهوة"'), bot: t('"Added 4 items to your shopping list! You now have 7 items total. Want me to remind you when you\'re near the store?"', '"أضفت 4 عناصر! عندك 7 الآن في القائمة. تبي أذكرك لما تكون قريب من السوق؟"') },
+              { gradient: 'from-pink-500 to-rose-500', emoji: '✈️', title: t('Travel Planning', 'تخطيط السفر'), user: t('"I have a trip next week, help me prepare"', '"عندي رحلة الأسبوع الجاي، ساعدني أجهز"'), bot: t('"Let me help! I\'ve created a travel checklist with 8 items. I\'ll set reminders for: passport check (3 days before), packing (day before), and airport departure."', '"خلني أساعدك! سويت قائمة تجهيزات 8 عناصر. وسأسوي تذكيرات: فحص الجواز (قبل 3 أيام)، الشنط (قبل يوم)، والمطار."') },
+              { gradient: 'from-blue-500 to-indigo-500', emoji: '🏋️', title: t('Fitness Tracking', 'تتبع اللياقة'), user: t('"Track my workout: 30 min run, 20 pushups"', '"سجّل تمريني: جري 30 دقيقة، 20 ضغط"'), bot: t('"Workout logged! Great session. This week: 3 workouts completed, 2 hours total. You\'re on a 5-day streak! Keep it up."', '"تم التسجيل! تمرين ممتاز. هذا الأسبوع: 3 تمارين، ساعتين. عندك سلسلة 5 أيام! استمر."') },
+            ].map((card, i) => (
+              <motion.div key={card.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: i * 0.08 }} viewport={{ once: true }}
+                className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300" data-testid={`interaction-card-${i}`}>
+                <div className={`h-1.5 bg-gradient-to-r ${card.gradient}`} />
+                <div className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-xl">{card.emoji}</span>
+                    <h3 className="font-bold text-gray-900">{card.title}</h3>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 mt-0.5"><span className="text-xs">👤</span></div>
+                      <p className="text-sm text-gray-700 bg-gray-50 rounded-xl rounded-tl-none px-3 py-2" dir="auto">{card.user}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5"><span className="text-xs text-white">AI</span></div>
+                      <p className="text-sm text-gray-600 bg-blue-50 rounded-xl rounded-tl-none px-3 py-2" dir="auto">{card.bot}</p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+
       {/* ── TESTIMONIALS ── */}
       <section className="py-24 md:py-32">
         <div className="max-w-7xl mx-auto px-6 md:px-12">

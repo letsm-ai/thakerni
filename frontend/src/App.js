@@ -19,6 +19,7 @@ import Profile from "./pages/Profile";
 import Statistics from "./pages/Statistics";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
 import Team from "./pages/Team";
+import ImageAnalysis from "./pages/ImageAnalysis";
 
 // Components
 import DashboardLayout from "./components/DashboardLayout";
@@ -128,6 +129,16 @@ const AppRouter = () => {
           <ProtectedRoute>
             <DashboardLayout>
               <Statistics />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/image-analysis"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <ImageAnalysis />
             </DashboardLayout>
           </ProtectedRoute>
         }

@@ -1,0 +1,27 @@
+# ============================================================
+# Letsm AI - WhatsApp Service (Node.js + Baileys)
+# ============================================================
+FROM node:20-alpine
+
+# Baileys needs git for some optional native deps & curl for healthcheck
+RUN apk add --no-cache git curl
+
+WORKDIR /app
+
+# Install deps first (layer caching)
+COPY whatsapp-service/package.json whatsapp-service/yarn.lock* /app/
+RUN yarn install --production --network-timeout 600000
+
+# Copy source
+COPY whatsapp-service/ /app/
+
+# Persistent auth folder (mounted as volume in compose)
+RUN mkdir -p /app/auth_info && chown -R node:node /app
+USER node
+
+EXPOSE 3001
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -fsS http://localhost:3001/health || exit 1
+
+CMD ["node", "index.js"]

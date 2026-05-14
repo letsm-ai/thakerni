@@ -1,0 +1,45 @@
+# Build artifacts
+**/node_modules
+**/build
+**/dist
+**/.next
+
+# Python
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/.pytest_cache
+**/.venv
+**/venv
+
+# Env files (NEVER ship)
+**/.env
+**/.env.*
+!**/.env*.example
+
+# Editor / VCS
+.git
+.github
+.gitignore
+.idea
+.vscode
+*.swp
+.DS_Store
+
+# Logs & test outputs
+**/*.log
+/test_reports
+/tests
+/backend/tests
+/whatsapp-service/auth_info
+/auth_testing.md
+/test_result.md
+
+# Project docs / scripts not needed in image
+README.md
+RUNBOOK.md
+/memory
+/scripts
+/nginx
+docker-compose*.yml
+Dockerfile.*
