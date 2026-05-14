@@ -22,6 +22,14 @@ volumes:
     driver: local
   certbot_conf:
     driver: local
+  portainer_data:
+    driver: local
+  netdata_config:
+    driver: local
+  netdata_lib:
+    driver: local
+  netdata_cache:
+    driver: local
 
 services:
   # ─────────────── MongoDB ───────────────
@@ -206,3 +214,93 @@ services:
       resources:
         limits:
           memory: 256M
+
+  # ─────────────── Portainer (Docker management UI) ───────────────
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: letsm_portainer
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - portainer_data:/data
+    networks:
+      - letsm_net
+    ports:
+      - "127.0.0.1:9000:9000"   # SSH tunnel only
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ─────────────── Dozzle (real-time container logs) ───────────────
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: letsm_dozzle
+    restart: unless-stopped
+    environment:
+      DOZZLE_NO_ANALYTICS: "true"
+      DOZZLE_LEVEL: "info"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - letsm_net
+    ports:
+      - "127.0.0.1:8080:8080"   # SSH tunnel only
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+  # ─────────────── Netdata (system & container metrics) ───────────────
+  netdata:
+    image: netdata/netdata:latest
+    container_name: letsm_netdata
+    restart: unless-stopped
+    hostname: letsm.ai
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - apparmor=unconfined
+    volumes:
+      - netdata_config:/etc/netdata
+      - netdata_lib:/var/lib/netdata
+      - netdata_cache:/var/cache/netdata
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - letsm_net
+    ports:
+      - "127.0.0.1:19999:19999"   # SSH tunnel only
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ─────────────── Mongo Express (DB management UI) ───────────────
+  mongo-express:
+    image: mongo-express:1-20-alpine3.19
+    container_name: letsm_mongo_express
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_ROOT_USER}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASSWORD}
+      ME_CONFIG_MONGODB_URL: "mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongo:27017/?authSource=admin"
+      ME_CONFIG_BASICAUTH_USERNAME: ${ME_USER:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${ME_PASSWORD}
+      ME_CONFIG_SITE_BASEURL: "/"
+    networks:
+      - letsm_net
+    ports:
+      - "127.0.0.1:8081:8081"   # SSH tunnel only
+    deploy:
+      resources:
+        limits:
+          memory: 128M
