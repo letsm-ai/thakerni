@@ -106,3 +106,20 @@ credentials.json
 *.pem
 *.key
 .credentials
+
+# Sensitive files - NEVER commit
+backend/.env
+backend/.env.*
+.env
+.env.*
+!.env.production.example
+!.env.backup.example
+
+# Backups & runtime data
+backup/
+uptime_data/
+*.bak
+*.bak.*
+
+# Mongo dumps
+*.archive.gz
