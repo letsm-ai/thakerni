@@ -16,8 +16,9 @@ WORKDIR /app
 # Install Python deps first (layer caching)
 COPY backend/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip \
- && pip install --no-cache-dir -r /app/requirements.txt \
- && pip install --no-cache-dir emergentintegrations --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/
+ && pip install --no-cache-dir \
+      --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/ \
+      -r /app/requirements.txt
 
 # Copy backend source
 COPY backend/ /app/
