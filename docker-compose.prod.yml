@@ -107,6 +107,7 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+      FRONTEND_URL: ${FRONTEND_URL:-https://letsm.ai}
       CORS_ORIGINS: ${CORS_ORIGINS}
       WHATSAPP_SERVICE_URL: "http://whatsapp:3001"
       TZ: ${TZ:-Asia/Muscat}
@@ -129,6 +130,7 @@ services:
       dockerfile: Dockerfile.frontend
       args:
         REACT_APP_BACKEND_URL: ${REACT_APP_BACKEND_URL}
+        REACT_APP_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
     container_name: letsm_frontend
     restart: unless-stopped
     networks:
