@@ -233,27 +233,47 @@ docker rm -f mongo-test
 
 ---
 
-## 6. Monitoring
+## 6. Monitoring & Admin Panels
 
-### 6.1 Uptime Kuma (bundled in docker-compose)
-Bound to **127.0.0.1:3001** — access only via SSH tunnel:
+All admin panels bind to **127.0.0.1 only** — they are NOT exposed to the internet. You access them via SSH tunnel from your local machine.
+
+### 6.1 One-command access (recommended)
+From your **local** machine:
 ```bash
-ssh -L 3001:127.0.0.1:3001 letsm@letsm.ai
-# Then open http://localhost:3001 in your browser
+bash scripts/admin-tunnel.sh
+# Or with custom VPS:
+VPS=76.13.220.229 USER_VPS=letsm bash scripts/admin-tunnel.sh
 ```
-Add monitors for:
-- `https://letsm.ai/api/health` (every 60s)
-- `https://letsm.ai/` (every 60s)
-- TCP `letsm.ai:443` (every 5 min) — catches cert expiry
+This opens 5 tunnels at once. Leave it running and open these URLs in your browser:
 
-### 6.2 Resource watch
+| Panel | URL | First login |
+|-------|-----|------------|
+| 📊 **Portainer** (Docker mgmt) | http://localhost:9000 | Create admin on first visit |
+| 📜 **Dozzle** (live logs)      | http://localhost:8080 | No auth (LAN-only) |
+| 💚 **Uptime Kuma** (uptime)    | http://localhost:3001 | Create admin on first visit |
+| 📈 **Netdata** (system metrics)| http://localhost:19999 | No auth (LAN-only) |
+| 🗄️ **Mongo Express** (DB UI)   | http://localhost:8081 | `ME_USER` / `ME_PASSWORD` from `.env` |
+
+### 6.2 Manual SSH tunnel (single panel)
+```bash
+ssh -L 9000:127.0.0.1:9000 letsm@76.13.220.229
+```
+
+### 6.3 Uptime Kuma setup (recommended monitors)
+- `https://letsm.ai/api/health` — every 60s
+- `https://letsm.ai/` — every 60s
+- TCP `letsm.ai:443` — every 5 min (catches cert expiry)
+- Notification: Telegram or Email
+
+### 6.4 Resource watch from CLI
 ```bash
 docker stats --no-stream
 htop
 df -h
+docker system df
 ```
 
-### 6.3 Log tails
+### 6.5 Log tails
 ```bash
 docker compose -f /opt/letsm/docker-compose.prod.yml logs -f --tail=200 backend
 docker compose -f /opt/letsm/docker-compose.prod.yml logs -f --tail=200 nginx
