@@ -328,12 +328,15 @@ async def admin_revenue_chart(days: int = 30, user: dict = Depends(require_permi
 async def admin_system_health(user: dict = Depends(require_permission("system"))):
     db = _db()
     import httpx
+    import os
+
+    whatsapp_url = os.environ.get("WHATSAPP_SERVICE_URL", "http://localhost:3001")
 
     # WhatsApp status
     wa_status = {"connected": False, "error": None}
     try:
         async with httpx.AsyncClient() as client:
-            r = await client.get("http://localhost:3001/status", timeout=3.0)
+            r = await client.get(f"{whatsapp_url}/status", timeout=3.0)
             wa_status = r.json()
     except Exception as e:
         wa_status["error"] = str(e)

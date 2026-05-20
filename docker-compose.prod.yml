@@ -3,7 +3,6 @@
 # Stack: Nginx + React + FastAPI + MongoDB + Redis + WhatsApp
 # Designed for: Ubuntu 24.04 VPS, 16GB RAM, 4 vCPU
 # ============================================================
-version: "3.9"
 
 networks:
   letsm_net:

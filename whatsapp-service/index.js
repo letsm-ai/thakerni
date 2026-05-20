@@ -12,7 +12,9 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
-const FASTAPI_URL = process.env.FASTAPI_URL || 'http://localhost:8001'; // Same container in production
+// Accepts either BACKEND_URL (docker-compose) or FASTAPI_URL (legacy)
+const FASTAPI_URL = process.env.BACKEND_URL || process.env.FASTAPI_URL || 'http://localhost:8001';
+console.log(`[init] WhatsApp service connecting to backend at: ${FASTAPI_URL}`);
 
 let sock = null;
 let qrCode = null;

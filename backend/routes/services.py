@@ -8,6 +8,7 @@ import csv
 import io
 import httpx
 import logging
+import os
 import secrets
 import string
 
@@ -17,7 +18,7 @@ from emergentintegrations.payments.stripe.checkout import StripeCheckout, Checko
 logger = logging.getLogger(__name__)
 services_router = APIRouter(prefix="/api")
 
-WHATSAPP_SERVICE_URL = "http://localhost:3001"
+WHATSAPP_SERVICE_URL = os.environ.get("WHATSAPP_SERVICE_URL", "http://localhost:3001")
 
 
 # ==================== DATA EXPORT ====================
