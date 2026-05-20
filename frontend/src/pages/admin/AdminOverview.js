@@ -3,6 +3,7 @@ import { adminApi } from '../../lib/api';
 import { useLanguage } from '../../context/LanguageContext';
 import { Users, CheckSquare, MessageSquare, Bell, DollarSign, CreditCard } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { CHART_TICK_SM, BAR_RADIUS_MD } from '../../lib/chartConfig';
 
 const StatCard = ({ icon: Icon, label, value, sub, color }) => (
   <div className="bg-white rounded-xl border border-slate-200 p-5" data-testid={`stat-${label.toLowerCase().replace(/\s/g, '-')}`}>
@@ -88,10 +89,10 @@ export default function AdminOverview() {
           {signups.length > 0 ? (
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={signups}>
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                <XAxis dataKey="date" tick={CHART_TICK_SM} />
+                <YAxis allowDecimals={false} tick={CHART_TICK_SM} />
                 <Tooltip />
-                <Bar dataKey="signups" fill="#7c3aed" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="signups" fill="#7c3aed" radius={BAR_RADIUS_MD} />
               </BarChart>
             </ResponsiveContainer>
           ) : (

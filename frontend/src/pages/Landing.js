@@ -413,12 +413,12 @@ const Landing = () => {
           </div>
           <div className="grid md:grid-cols-2 gap-8" data-testid="conversations-grid">
             {conversations.map((conv, ci) => (
-              <motion.div key={ci} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: ci * 0.1 }} viewport={{ once: true }}
+              <motion.div key={conv.action} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: ci * 0.1 }} viewport={{ once: true }}
                 className="bg-white border border-gray-200 rounded-3xl p-8">
                 <p className="text-xs font-medium text-gray-400 mb-4 uppercase tracking-wider">{t(`Scenario ${ci + 1}`, `سيناريو ${ci + 1}`)}</p>
                 <div className="space-y-3">
                   {conv.messages.map((m, mi) => (
-                    <div key={mi} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div key={`${conv.action}-${mi}`} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${m.role === 'user' ? 'bg-violet-600 text-white rounded-tr-sm' : 'bg-gray-100 text-gray-800 rounded-tl-sm'}`} dir="auto">{m.text}</div>
                     </div>
                   ))}
@@ -541,8 +541,8 @@ const Landing = () => {
             <div>
               <h3 className="text-2xl font-bold text-gray-900 mb-6">{t('Our Commitment to You', 'التزامنا تجاهك')}</h3>
               <ul className="space-y-4">
-                {[t('Never sell your personal data to third parties', 'لن نبيع بياناتك لأطراف ثالثة'), t('No tracking across other websites or apps', 'لا تتبع عبر مواقع أخرى'), t('Regular security audits by independent experts', 'تدقيقات أمنية منتظمة'), t('Transparent incident reporting and communication', 'تقارير حوادث شفافة')].map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-3"><CheckCircle size={20} className="text-emerald-500 flex-shrink-0 mt-0.5" weight="fill" /><span className="text-gray-600">{item}</span></li>
+                {[t('Never sell your personal data to third parties', 'لن نبيع بياناتك لأطراف ثالثة'), t('No tracking across other websites or apps', 'لا تتبع عبر مواقع أخرى'), t('Regular security audits by independent experts', 'تدقيقات أمنية منتظمة'), t('Transparent incident reporting and communication', 'تقارير حوادث شفافة')].map((item) => (
+                  <li key={item} className="flex items-start gap-3"><CheckCircle size={20} className="text-emerald-500 flex-shrink-0 mt-0.5" weight="fill" /><span className="text-gray-600">{item}</span></li>
                 ))}
               </ul>
             </div>
@@ -576,7 +576,7 @@ const Landing = () => {
                 <p className={`text-sm mb-5 ${plan.pop ? 'text-white/60' : 'text-gray-400'}`}>{plan.desc}</p>
                 <div className="flex items-baseline gap-1 mb-6"><span className="text-5xl font-bold">{plan.price}</span>{plan.period && <span className={plan.pop ? 'text-white/60' : 'text-gray-400'}>{plan.period}</span>}</div>
                 <ul className="space-y-3 mb-8">
-                  {plan.features.map((f, fi) => (<li key={fi} className="flex items-center gap-2.5"><CheckCircle size={18} weight="fill" className={plan.pop ? 'text-white' : 'text-emerald-500'} /><span className={`text-sm ${plan.pop ? 'text-white/90' : 'text-gray-600'}`}>{f}</span></li>))}
+                  {plan.features.map((f) => (<li key={f} className="flex items-center gap-2.5"><CheckCircle size={18} weight="fill" className={plan.pop ? 'text-white' : 'text-emerald-500'} /><span className={`text-sm ${plan.pop ? 'text-white/90' : 'text-gray-600'}`}>{f}</span></li>))}
                 </ul>
                 <Link to="/login" className={`block w-full py-3.5 text-center font-medium rounded-full transition-colors ${plan.pop ? 'bg-white text-violet-600 hover:bg-gray-100' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{plan.cta}</Link>
               </motion.div>

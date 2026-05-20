@@ -3,6 +3,7 @@ import { adminApi } from '../../lib/api';
 import { useLanguage } from '../../context/LanguageContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CHART_TICK_SM, BAR_RADIUS_SM } from '../../lib/chartConfig';
 
 export default function AdminBilling() {
   const { isRTL } = useLanguage();
@@ -61,10 +62,10 @@ export default function AdminBilling() {
         <h3 className="font-semibold text-slate-800 mb-4">Revenue (30 days)</h3>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={revenue}>
-            <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
+            <XAxis dataKey="date" tick={CHART_TICK_SM} />
+            <YAxis tick={CHART_TICK_SM} />
             <Tooltip formatter={(v) => `$${v.toFixed(2)}`} />
-            <Bar dataKey="revenue" fill="#10b981" radius={[3, 3, 0, 0]} />
+            <Bar dataKey="revenue" fill="#10b981" radius={BAR_RADIUS_SM} />
           </BarChart>
         </ResponsiveContainer>
       </div>
