@@ -40,6 +40,6 @@ README.md
 RUNBOOK.md
 /memory
 /scripts
-/nginx
+
 docker-compose*.yml
 Dockerfile.*
