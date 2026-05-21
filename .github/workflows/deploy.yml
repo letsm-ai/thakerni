@@ -131,23 +131,29 @@ jobs:
             # Rolling restart (no downtime for frontend; backend may blip ~2s)
             docker compose -f docker-compose.prod.yml -f docker-compose.deploy.yml up -d --remove-orphans
 
+            # CRITICAL: reload nginx to refresh upstream DNS cache after backend/frontend recreate.
+            # Without this, nginx keeps the stale container IPs and returns 502 until it self-recovers.
+            echo "▶ Reloading nginx to refresh upstream IPs..."
+            sleep 5
+            docker exec letsm_nginx nginx -s reload || docker compose -f docker-compose.prod.yml restart nginx
+
             # Cleanup old images
             docker image prune -af --filter "until=72h"
 
             # Smoke test - retry up to 60s for backend to be ready after recreate
             echo "▶ Waiting for backend to be healthy..."
-            sleep 15
-            for i in 1 2 3 4 5 6 7 8 9 10; do
+            sleep 10
+            for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
               if curl -fsS --max-time 5 https://letsm.ai/api/health > /dev/null 2>&1; then
                 echo "✅ Backend healthy on attempt $i"
                 break
               fi
-              if [ "$i" = "10" ]; then
-                echo "❌ Health check failed after 10 attempts"
-                docker compose -f docker-compose.prod.yml logs --tail=30 backend
+              if [ "$i" = "12" ]; then
+                echo "❌ Health check failed after 12 attempts"
+                docker compose -f docker-compose.prod.yml logs --tail=50 backend nginx
                 exit 1
               fi
-              echo "  attempt $i/10 - backend not ready, waiting 5s..."
+              echo "  attempt $i/12 - backend not ready, waiting 5s..."
               sleep 5
             done
             echo "✅ Deploy successful: ${{ needs.build.outputs.image_tag }}"
