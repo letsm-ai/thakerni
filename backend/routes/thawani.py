@@ -24,6 +24,10 @@ from database import (
     THAWANI_PUBLIC_KEY,
 )
 from auth_helpers import get_current_user
+from routes.invoices import (
+    send_subscription_invoice_email,
+    build_invoice_record,
+)
 import database as _db_module
 
 logger = logging.getLogger(__name__)
@@ -179,7 +183,9 @@ async def verify_thawani_session(session_id: str, user: dict = Depends(get_curre
     if payment_status == "paid":
         # Calculate expiry
         days = 365 if transaction["billing_cycle"] == "yearly" else 30
-        expires_at = (datetime.now(timezone.utc) + timedelta(days=days)).isoformat()
+        paid_at = datetime.now(timezone.utc)
+        expires_dt = paid_at + timedelta(days=days)
+        expires_at = expires_dt.isoformat()
 
         # Upgrade user
         await db.users.update_one(
@@ -202,6 +208,42 @@ async def verify_thawani_session(session_id: str, user: dict = Depends(get_curre
                 "thawani_invoice": data.get("invoice"),
             }}
         )
+
+        # Generate + email invoice (best-effort; failure must not block upgrade)
+        plan_label = _plan_label(transaction["plan_id"], transaction["billing_cycle"])
+        try:
+            invoice_number = await send_subscription_invoice_email(
+                customer_email=user["email"],
+                customer_name=user.get("name", ""),
+                plan_label=plan_label,
+                billing_cycle=transaction["billing_cycle"],
+                total_omr=transaction["amount_omr"],
+                paid_at=paid_at,
+                expires_at=expires_dt,
+                transaction_id=transaction["transaction_id"],
+            )
+            if invoice_number:
+                record = build_invoice_record(
+                    invoice_number=invoice_number,
+                    user_id=user["user_id"],
+                    customer_email=user["email"],
+                    plan_id=transaction["plan_id"],
+                    plan_label=plan_label,
+                    billing_cycle=transaction["billing_cycle"],
+                    total_omr=transaction["amount_omr"],
+                    paid_at=paid_at,
+                    expires_at=expires_dt,
+                    transaction_id=transaction["transaction_id"],
+                    session_id=session_id,
+                )
+                await db.invoices.insert_one(record)
+                await db.payment_transactions.update_one(
+                    {"session_id": session_id},
+                    {"$set": {"invoice_number": invoice_number}}
+                )
+        except Exception as e:
+            logger.error(f"Invoice generation failed for {user['email']}: {e}")
+
         logger.info(
             f"Thawani: user {user['user_id']} upgraded to {transaction['plan_id']}"
             f" ({transaction['billing_cycle']}) — expires {expires_at}"
@@ -235,6 +277,16 @@ async def thawani_config():
         "enabled": bool(_db_module.THAWANI_SECRET_KEY and _db_module.THAWANI_PUBLIC_KEY),
         "mode": _db_module.THAWANI_MODE,
     }
+
+
+@thawani_router.get("/invoices")
+async def list_my_invoices(user: dict = Depends(get_current_user)):
+    """Returns the authenticated user's invoices, newest first."""
+    cursor = db.invoices.find(
+        {"user_id": user["user_id"]}, {"_id": 0}
+    ).sort("issued_at", -1).limit(50)
+    invoices = [doc async for doc in cursor]
+    return {"invoices": invoices}
 
 
 # ─────────────────────────────────────────────────────────────
