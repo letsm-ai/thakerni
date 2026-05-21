@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { EnvelopeSimple, Lock, User, Eye, EyeSlash, GoogleLogo, ChatCircle, CheckCircle, Bell, CalendarBlank } from '@phosphor-icons/react';
+import { EnvelopeSimple, Lock, User, Eye, EyeSlash, ChatCircle, CheckCircle, Bell, CalendarBlank } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
-import { GoogleLogin } from '@react-oauth/google';
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,7 +14,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { login, register, loginWithGoogleCredential } = useAuth();
+  const { login, register } = useAuth();
   const { isRTL } = useLanguage();
   const navigate = useNavigate();
 
@@ -36,21 +35,6 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-  const handleGoogleSuccess = async (resp) => {
-    setError('');
-    try {
-      await loginWithGoogleCredential(resp.credential);
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.detail || (isRTL ? 'فشل تسجيل الدخول بقوقل' : 'Google sign-in failed'));
-    }
-  };
-
-  const handleGoogleError = () => {
-    setError(isRTL ? 'تعذّر إكمال تسجيل الدخول بقوقل' : 'Could not complete Google sign-in');
   };
 
   const features = [
@@ -171,35 +155,9 @@ const Login = () => {
               </div>
             )}
 
-            {/* Google Login — Top for quick access (direct GIS, no Emergent wrapper) */}
-            <div className="w-full flex justify-center" data-testid="google-login-container">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
-                text={isLogin ? 'signin_with' : 'signup_with'}
-                shape="pill"
-                size="large"
-                width="320"
-                useOneTap={false}
-                logo_alignment="left"
-                locale={isRTL ? 'ar' : 'en'}
-              />
-            </div>
-
-            {/* Fallback styled button hint for users without GIS support */}
-            <noscript>
-              <button className="w-full flex items-center justify-center gap-3 bg-white text-slate-800 border border-slate-200 rounded-xl px-6 py-3 font-medium mt-3">
-                <GoogleLogo size={20} weight="bold" />
-                {isRTL ? 'المتابعة مع Google' : 'Continue with Google'}
-              </button>
-            </noscript>
-
-            {/* Divider */}
-            <div className="my-6 flex items-center">
-              <div className="flex-1 border-t border-slate-200"></div>
-              <span className="px-4 text-xs text-slate-400 uppercase tracking-wider">{isRTL ? 'أو' : 'or'}</span>
-              <div className="flex-1 border-t border-slate-200"></div>
-            </div>
+            {/* Google Login temporarily disabled — re-enable later by adding GoogleLogin
+                from @react-oauth/google and ensuring REACT_APP_GOOGLE_CLIENT_ID +
+                Google Cloud Console JS origins are set. */}
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
