@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { EnvelopeSimple, Lock, User, Eye, EyeSlash, GoogleLogo, ChatCircle, CheckCircle, Bell, CalendarBlank } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
+import { GoogleLogin } from '@react-oauth/google';
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,8 +14,8 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
-  const { login, register, loginWithGoogle } = useAuth();
+
+  const { login, register, loginWithGoogleCredential } = useAuth();
   const { isRTL } = useLanguage();
   const navigate = useNavigate();
 
@@ -35,6 +36,21 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+  const handleGoogleSuccess = async (resp) => {
+    setError('');
+    try {
+      await loginWithGoogleCredential(resp.credential);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.detail || (isRTL ? 'فشل تسجيل الدخول بقوقل' : 'Google sign-in failed'));
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError(isRTL ? 'تعذّر إكمال تسجيل الدخول بقوقل' : 'Could not complete Google sign-in');
   };
 
   const features = [
@@ -155,15 +171,28 @@ const Login = () => {
               </div>
             )}
 
-            {/* Google Login — Top for quick access */}
-            <button
-              onClick={loginWithGoogle}
-              className="w-full flex items-center justify-center gap-3 bg-white text-slate-800 border border-slate-200 rounded-xl px-6 py-3 font-medium hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm transition-all"
-              data-testid="google-login-button"
-            >
-              <GoogleLogo size={20} weight="bold" />
-              {isRTL ? 'المتابعة مع Google' : 'Continue with Google'}
-            </button>
+            {/* Google Login — Top for quick access (direct GIS, no Emergent wrapper) */}
+            <div className="w-full flex justify-center" data-testid="google-login-container">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                text={isLogin ? 'signin_with' : 'signup_with'}
+                shape="pill"
+                size="large"
+                width="320"
+                useOneTap={false}
+                logo_alignment="left"
+                locale={isRTL ? 'ar' : 'en'}
+              />
+            </div>
+
+            {/* Fallback styled button hint for users without GIS support */}
+            <noscript>
+              <button className="w-full flex items-center justify-center gap-3 bg-white text-slate-800 border border-slate-200 rounded-xl px-6 py-3 font-medium mt-3">
+                <GoogleLogo size={20} weight="bold" />
+                {isRTL ? 'المتابعة مع Google' : 'Continue with Google'}
+              </button>
+            </noscript>
 
             {/* Divider */}
             <div className="my-6 flex items-center">
@@ -214,9 +243,20 @@ const Login = () => {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-slate-700 mb-1.5 block">
-                  {isRTL ? 'كلمة المرور' : 'Password'}
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-sm font-medium text-slate-700">
+                    {isRTL ? 'كلمة المرور' : 'Password'}
+                  </label>
+                  {isLogin && (
+                    <Link
+                      to="/forgot-password"
+                      className="text-xs bg-gradient-to-r from-cyan-500 to-blue-600 bg-clip-text text-transparent font-semibold hover:underline"
+                      data-testid="forgot-password-link"
+                    >
+                      {isRTL ? 'نسيت كلمة المرور؟' : 'Forgot password?'}
+                    </Link>
+                  )}
+                </div>
                 <div className="relative">
                   <Lock className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-slate-400`} size={18} />
                   <input

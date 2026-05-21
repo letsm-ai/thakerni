@@ -145,8 +145,14 @@ Capacity estimate on the user's box:
 - 200-500 concurrent users; total registered 5K-10K before scaling concerns
 - Cost: ~$20-35/month fixed + variable OpenAI usage
 
+## Recent Updates (Feb 2026)
+- **Direct Google OAuth** — Removed Emergent OAuth wrapper. Frontend now uses `@react-oauth/google` `<GoogleLogin />` (credential / ID token flow); backend `/api/auth/google` verifies the ID token with `google-auth` and links/creates users by email. No "Secured by Emergent" badge.
+- **Forgot Password / Reset Password flow** — `POST /api/auth/forgot-password` issues a 1-hour single-use token stored in `password_reset_tokens` and emails a reset link via Resend. `POST /api/auth/reset-password` validates the token, updates the hashed password, and invalidates all existing sessions for that user. New pages: `/forgot-password`, `/reset-password`.
+- **CI/CD fix** — `docker-compose.deploy.yml` is now copied to the VPS by GitHub Actions (it was previously missing from the SCP source list, which caused the production `compose pull` step to fail on first-time deploys/recreates). Frontend image build now also bakes `REACT_APP_GOOGLE_CLIENT_ID`.
+
 ## Backlog
 - P2: Add actual video to demo modal
 - P2: User verification of Image Analysis + Sample Interactions Gallery + Plus Jakarta Sans font
 - P3: Split large React pages (Profile.js, CalendarPage.js) into smaller sub-components
 - P3: Implement team calendar view for shared tasks/reminders
+- P3: Verify domain `letsm.ai` in Resend dashboard to send from `noreply@letsm.ai` (currently using `onboarding@resend.dev` which works only for the owner's verified email)

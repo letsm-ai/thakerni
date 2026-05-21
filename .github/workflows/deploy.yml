@@ -65,6 +65,7 @@ jobs:
           push: true
           build-args: |
             REACT_APP_BACKEND_URL=${{ secrets.REACT_APP_BACKEND_URL }}
+            REACT_APP_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:${{ steps.meta.outputs.tag }}
@@ -101,7 +102,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
-          source: "docker-compose.prod.yml,nginx/,scripts/"
+          source: "docker-compose.prod.yml,docker-compose.deploy.yml,nginx/,scripts/"
           target: "/opt/letsm/"
           overwrite: true
 
@@ -133,9 +134,22 @@ jobs:
             # Cleanup old images
             docker image prune -af --filter "until=72h"
 
-            # Smoke test
-            sleep 10
-            curl -fsS https://letsm.ai/api/health || (echo "❌ Health check failed" && exit 1)
+            # Smoke test - retry up to 60s for backend to be ready after recreate
+            echo "▶ Waiting for backend to be healthy..."
+            sleep 15
+            for i in 1 2 3 4 5 6 7 8 9 10; do
+              if curl -fsS --max-time 5 https://letsm.ai/api/health > /dev/null 2>&1; then
+                echo "✅ Backend healthy on attempt $i"
+                break
+              fi
+              if [ "$i" = "10" ]; then
+                echo "❌ Health check failed after 10 attempts"
+                docker compose -f docker-compose.prod.yml logs --tail=30 backend
+                exit 1
+              fi
+              echo "  attempt $i/10 - backend not ready, waiting 5s..."
+              sleep 5
+            done
             echo "✅ Deploy successful: ${{ needs.build.outputs.image_tag }}"
 
       - name: Notify on failure

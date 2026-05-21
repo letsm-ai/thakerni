@@ -9,6 +9,8 @@ import { Toaster } from "./components/ui/sonner";
 // Pages
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import AuthCallback from "./pages/AuthCallback";
 import Chat from "./pages/Chat";
 import Tasks from "./pages/Tasks";
@@ -50,6 +52,8 @@ const AppRouter = () => {
       {/* Public Routes */}
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       
       {/* Protected Dashboard Routes */}

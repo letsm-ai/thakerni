@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { adminApi } from '../../lib/api';
 import { useLanguage } from '../../context/LanguageContext';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { CHART_TICK_SM, BAR_RADIUS_SM } from '../../lib/chartConfig';
 
 const COLORS = ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#ec4899', '#14b8a6'];
 
@@ -59,8 +60,8 @@ export default function AdminAnalytics() {
                   <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+              <XAxis dataKey="date" tick={CHART_TICK_SM} />
+              <YAxis allowDecimals={false} tick={CHART_TICK_SM} />
               <Tooltip />
               <Area type="monotone" dataKey="signups" stroke="#7c3aed" fill="url(#signupGrad)" strokeWidth={2} />
             </AreaChart>
@@ -72,11 +73,11 @@ export default function AdminAnalytics() {
           <h3 className="font-semibold text-slate-800 mb-4">Daily Activity</h3>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={activity}>
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+              <XAxis dataKey="date" tick={CHART_TICK_SM} />
+              <YAxis allowDecimals={false} tick={CHART_TICK_SM} />
               <Tooltip />
-              <Bar dataKey="messages" fill="#7c3aed" radius={[3, 3, 0, 0]} name="Messages" />
-              <Bar dataKey="tasks" fill="#10b981" radius={[3, 3, 0, 0]} name="Tasks" />
+              <Bar dataKey="messages" fill="#7c3aed" radius={BAR_RADIUS_SM} name="Messages" />
+              <Bar dataKey="tasks" fill="#10b981" radius={BAR_RADIUS_SM} name="Tasks" />
             </BarChart>
           </ResponsiveContainer>
         </div>

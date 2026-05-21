@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { adminApi } from '../../lib/api';
 import { useLanguage } from '../../context/LanguageContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { CHART_TICK_SM, BAR_RADIUS_MD } from '../../lib/chartConfig';
 
 export default function AdminUsage() {
   const { isRTL } = useLanguage();
@@ -63,11 +64,11 @@ export default function AdminUsage() {
           <h3 className="font-semibold text-slate-800 mb-4">{isRTL ? 'أعلى 10 مستخدمين استهلاكاً' : 'Top 10 Users by Usage'}</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={chartData}>
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+              <XAxis dataKey="name" tick={CHART_TICK_SM} />
+              <YAxis allowDecimals={false} tick={CHART_TICK_SM} />
               <Tooltip />
-              <Bar dataKey="messages" fill="#7c3aed" name={isRTL ? 'رسائل' : 'Messages'} radius={[4, 4, 0, 0]} />
-              <Bar dataKey="whatsapp" fill="#22c55e" name={isRTL ? 'واتساب' : 'WhatsApp'} radius={[4, 4, 0, 0]} />
+              <Bar dataKey="messages" fill="#7c3aed" name={isRTL ? 'رسائل' : 'Messages'} radius={BAR_RADIUS_MD} />
+              <Bar dataKey="whatsapp" fill="#22c55e" name={isRTL ? 'واتساب' : 'WhatsApp'} radius={BAR_RADIUS_MD} />
             </BarChart>
           </ResponsiveContainer>
         </div>

@@ -84,6 +84,16 @@ export const AuthProvider = ({ children }) => {
     window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
   };
 
+  const loginWithGoogleCredential = async (credential) => {
+    // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+    const response = await axios.post(`${API}/auth/google`, { credential });
+    const { access_token, user: userData } = response.data;
+    tokenStore.setToken(access_token);
+    setToken(access_token);
+    setUser(userData);
+    return userData;
+  };
+
   const logout = async () => {
     try {
       await axios.post(`${API}/auth/logout`, {}, { withCredentials: true });
@@ -107,6 +117,7 @@ export const AuthProvider = ({ children }) => {
       login,
       register,
       loginWithGoogle,
+      loginWithGoogleCredential,
       logout,
       setUserData,
       checkAuth
