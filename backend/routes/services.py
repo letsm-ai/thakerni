@@ -113,8 +113,14 @@ async def get_subscription_plans():
     plans = []
     for plan_id, plan in SUBSCRIPTION_PLANS.items():
         plans.append({
-            "plan_id": plan_id, "name": plan["name"], "price": plan["price"],
-            "currency": plan["currency"], "features": plan["features"]
+            "plan_id": plan_id,
+            "name": plan["name"],
+            "name_ar": plan.get("name_ar"),
+            "price": plan["price"],
+            "price_yearly": plan.get("price_yearly", plan["price"] * 12),
+            "currency": plan["currency"],
+            "features": plan["features"],
+            "features_ar": plan.get("features_ar", plan["features"]),
         })
     return {"plans": plans}
 
@@ -125,8 +131,14 @@ async def get_subscription_status(user: dict = Depends(get_current_user)):
     subscription = user_doc.get("subscription", "free")
     plan = SUBSCRIPTION_PLANS.get(subscription, SUBSCRIPTION_PLANS["free"])
     return {
-        "plan_id": subscription, "plan_name": plan["name"],
-        "price": plan["price"], "features": plan["features"], "limits": plan["limits"]
+        "plan_id": subscription,
+        "plan_name": plan["name"],
+        "price": plan["price"],
+        "features": plan["features"],
+        "limits": plan["limits"],
+        "cycle": user_doc.get("subscription_cycle"),
+        "expires_at": user_doc.get("subscription_expires_at"),
+        "provider": user_doc.get("subscription_provider"),
     }
 
 

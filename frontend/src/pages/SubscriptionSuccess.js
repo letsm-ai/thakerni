@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { subscriptionApi } from '../lib/api';
+import { subscriptionApi, thawaniApi } from '../lib/api';
 import { CheckCircle, XCircle, ArrowClockwise, Sparkle } from '@phosphor-icons/react';
 
 const SubscriptionSuccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const sessionId = searchParams.get('session_id');
+  const provider = searchParams.get('provider') || 'stripe';
   const [status, setStatus] = useState('checking');
   const [paymentData, setPaymentData] = useState(null);
   const [attempts, setAttempts] = useState(0);
@@ -18,14 +19,16 @@ const SubscriptionSuccess = () => {
     }
 
     try {
-      const res = await subscriptionApi.checkPaymentStatus(sessionId);
+      const res = provider === 'thawani'
+        ? await thawaniApi.verifySession(sessionId)
+        : await subscriptionApi.checkPaymentStatus(sessionId);
       const data = res.data;
       setPaymentData(data);
 
       if (data.payment_status === 'paid') {
         setStatus('success');
-      } else if (data.status === 'expired') {
-        setStatus('expired');
+      } else if (data.status === 'expired' || data.payment_status === 'cancelled') {
+        setStatus(data.payment_status === 'cancelled' ? 'cancelled' : 'expired');
       } else {
         setStatus('processing');
         setAttempts(prev => prev + 1);
@@ -33,7 +36,7 @@ const SubscriptionSuccess = () => {
     } catch (err) {
       setStatus('error');
     }
-  }, [sessionId, attempts]);
+  }, [sessionId, attempts, provider]);
 
   useEffect(() => {
     if (status === 'checking' || status === 'processing') {

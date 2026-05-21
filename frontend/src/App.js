@@ -20,6 +20,7 @@ import WhatsApp from "./pages/WhatsApp";
 import Profile from "./pages/Profile";
 import Statistics from "./pages/Statistics";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
+import SubscriptionCancel from "./pages/SubscriptionCancel";
 import Team from "./pages/Team";
 import ImageAnalysis from "./pages/ImageAnalysis";
 

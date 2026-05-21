@@ -37,6 +37,7 @@ from routes.teams import team_router
 from routes.google_calendar import gcal_router
 from routes.voice import voice_router
 from routes.image_analysis import image_router
+from routes.thawani import thawani_router, downgrade_expired_subscriptions
 
 # ── Create App ──
 app = FastAPI(title="Letsm AI - AI Assistant Platform")
@@ -55,6 +56,7 @@ app.include_router(team_router)
 app.include_router(gcal_router)
 app.include_router(voice_router)
 app.include_router(image_router)
+app.include_router(thawani_router)
 
 # ── CORS ──
 app.add_middleware(
@@ -76,8 +78,18 @@ async def startup_scheduler():
         id="weekly_digest",
         replace_existing=True,
     )
+    # Auto-downgrade expired Thawani subscriptions — runs every hour at minute 5.
+    scheduler.add_job(
+        downgrade_expired_subscriptions,
+        trigger=CronTrigger(minute=5),
+        id="subscription_expiry_check",
+        replace_existing=True,
+    )
     scheduler.start()
-    logger.info("Scheduler started — weekly digest runs every Sunday at 09:00 UTC")
+    logger.info(
+        "Scheduler started — weekly digest (Sun 09:00 UTC), "
+        "subscription expiry check (hourly at :05)"
+    )
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

@@ -146,7 +146,8 @@ Capacity estimate on the user's box:
 - Cost: ~$20-35/month fixed + variable OpenAI usage
 
 ## Recent Updates (Feb 2026)
-- **Direct Google OAuth** — Removed Emergent OAuth wrapper. Frontend now uses `@react-oauth/google` `<GoogleLogin />` (credential / ID token flow); backend `/api/auth/google` verifies the ID token with `google-auth` and links/creates users by email. No "Secured by Emergent" badge.
+- **Thawani Pay integration** (Feb 21) — Omani payment gateway for OMR subscriptions. New endpoints `/api/payments/thawani/create-session`, `/verify/{id}`, `/config`. Amount conversion to baisas (×1000). Plans support monthly + yearly billing cycles (yearly = ~17% discount). Stripe UI hidden until later. Auto-downgrade scheduler runs hourly at :05 UTC to revert expired Pro/Business users back to Free.
+- **Direct Google OAuth** — Removed Emergent OAuth wrapper. Frontend now uses `@react-oauth/google` `<GoogleLogin />` (credential / ID token flow); backend `/api/auth/google` verifies the ID token with `google-auth` and links/creates users by email. No "Secured by Emergent" badge. *Currently hidden in UI awaiting Google Console origin setup.*
 - **Forgot Password / Reset Password flow** — `POST /api/auth/forgot-password` issues a 1-hour single-use token stored in `password_reset_tokens` and emails a reset link via Resend. `POST /api/auth/reset-password` validates the token, updates the hashed password, and invalidates all existing sessions for that user. New pages: `/forgot-password`, `/reset-password`.
 - **CI/CD fix** — `docker-compose.deploy.yml` is now copied to the VPS by GitHub Actions (it was previously missing from the SCP source list, which caused the production `compose pull` step to fail on first-time deploys/recreates). Frontend image build now also bakes `REACT_APP_GOOGLE_CLIENT_ID`.
 

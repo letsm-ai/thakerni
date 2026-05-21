@@ -25,16 +25,34 @@ EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
 # Stripe Config
 STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
 
+# Thawani Pay Config (Omani payment gateway)
+THAWANI_SECRET_KEY = os.environ.get('THAWANI_SECRET_KEY')
+THAWANI_PUBLIC_KEY = os.environ.get('THAWANI_PUBLIC_KEY')
+# Use sandbox by default; set THAWANI_MODE=live in production .env
+THAWANI_MODE = os.environ.get('THAWANI_MODE', 'live')
+THAWANI_BASE_URL = (
+    'https://checkout.thawani.om/api/v1'
+    if THAWANI_MODE == 'live'
+    else 'https://uatcheckout.thawani.om/api/v1'
+)
+THAWANI_PAY_URL = (
+    'https://checkout.thawani.om/pay'
+    if THAWANI_MODE == 'live'
+    else 'https://uatcheckout.thawani.om/pay'
+)
+
 # Resend Config
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY')
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
 
 # Subscription Plans
+# Prices are stored in OMR. For Thawani we convert to baisas (1 OMR = 1000 baisas).
 SUBSCRIPTION_PLANS = {
     "free": {
         "name": "Free",
         "name_ar": "مجاني",
         "price": 0.00,
+        "price_yearly": 0.00,
         "currency": "omr",
         "features": ["10 Messages/day", "5 Active Tasks", "Basic Reminders", "Email Support"],
         "features_ar": ["10 رسائل/يوم", "5 مهام نشطة", "تذكيرات أساسية", "دعم بالبريد"],
@@ -44,6 +62,7 @@ SUBSCRIPTION_PLANS = {
         "name": "Pro",
         "name_ar": "برو",
         "price": 20.00,
+        "price_yearly": 200.00,  # 2 months free
         "currency": "omr",
         "features": ["Unlimited Messages", "Unlimited Tasks", "Voice Input", "Advanced Analytics", "Priority Support"],
         "features_ar": ["رسائل غير محدودة", "مهام غير محدودة", "إدخال صوتي", "تحليلات متقدمة", "دعم أولوية"],
@@ -53,6 +72,7 @@ SUBSCRIPTION_PLANS = {
         "name": "Business",
         "name_ar": "بزنس",
         "price": 50.00,
+        "price_yearly": 500.00,  # 2 months free
         "currency": "omr",
         "features": ["All Pro Features", "WhatsApp Integration", "Team up to 10", "Custom API", "Account Manager"],
         "features_ar": ["كل مميزات برو", "تكامل واتساب", "فريق حتى 10", "API مخصص", "مدير حساب"],

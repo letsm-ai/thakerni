@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { userApi, subscriptionApi, exportApi, emailApi } from '../lib/api';
+import { userApi, subscriptionApi, exportApi, emailApi, thawaniApi } from '../lib/api';
 import { User, EnvelopeSimple, Calendar, PencilSimple, Check, CrownSimple, Lightning, DownloadSimple, BellRinging, Export, Envelope, Eye } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
@@ -27,8 +27,17 @@ const Profile = () => {
   const [resendKey, setResendKey] = useState('');
   const [senderEmail, setSenderEmail] = useState('');
   const [savingConfig, setSavingConfig] = useState(false);
+  const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' | 'yearly'
+  const [thawaniEnabled, setThawaniEnabled] = useState(false);
 
-  useEffect(() => { loadSubscription(); loadEmailPrefs(); loadDigestSchedule(); loadEmailConfig(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { loadSubscription(); loadEmailPrefs(); loadDigestSchedule(); loadEmailConfig(); loadThawaniConfig(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadThawaniConfig = async () => {
+    try {
+      const res = await thawaniApi.getConfig();
+      setThawaniEnabled(res.data.enabled);
+    } catch { /* non-critical */ }
+  };
 
   const loadSubscription = async () => {
     try {
@@ -240,7 +249,7 @@ const Profile = () => {
       <div className="bg-white border border-slate-200 rounded-lg p-6 mb-6" data-testid="subscription-section">
         <div className="flex items-center gap-3 mb-4">
           <CrownSimple size={22} className="text-violet-600" weight="fill" />
-          <h3 className="font-semibold text-slate-900">Subscription Plan</h3>
+          <h3 className="font-semibold text-slate-900">{isRTL ? 'خطة الاشتراك' : 'Subscription Plan'}</h3>
         </div>
         <div className="flex items-center gap-3 mb-6 p-3 bg-slate-50 rounded-lg">
           <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
@@ -248,45 +257,80 @@ const Profile = () => {
             currentPlanId === 'pro' ? 'bg-blue-100 text-blue-700' :
             'bg-slate-200 text-slate-600'
           }`}>{subscription?.plan_name || 'Free'}</div>
-          <span className="text-sm text-slate-500">
-            {currentPlanId === 'free' ? 'Upgrade to unlock all features' : 'Active subscription'}
-          </span>
+          <div className="flex-1 min-w-0">
+            <span className="text-sm text-slate-500 block">
+              {currentPlanId === 'free' ? (isRTL ? 'ارتقِ بحسابك للوصول لجميع المميزات' : 'Upgrade to unlock all features') : (isRTL ? 'اشتراك فعّال' : 'Active subscription')}
+            </span>
+            {subscription?.expires_at && (
+              <span className="text-xs text-slate-400 block mt-0.5" data-testid="subscription-expires-at">
+                {isRTL ? 'ينتهي في: ' : 'Expires: '}{new Date(subscription.expires_at).toLocaleDateString(isRTL ? 'ar-OM' : 'en-US')}
+              </span>
+            )}
+          </div>
         </div>
+
+        {/* Billing cycle toggle */}
+        {thawaniEnabled && currentPlanId === 'free' && (
+          <div className="flex justify-center mb-4">
+            <div className="inline-flex bg-slate-100 rounded-full p-1" data-testid="billing-cycle-toggle">
+              <button
+                onClick={() => setBillingCycle('monthly')}
+                className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-colors ${billingCycle === 'monthly' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}
+                data-testid="billing-monthly"
+              >{isRTL ? 'شهري' : 'Monthly'}</button>
+              <button
+                onClick={() => setBillingCycle('yearly')}
+                className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-colors ${billingCycle === 'yearly' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}
+                data-testid="billing-yearly"
+              >{isRTL ? 'سنوي (وفّر شهرين)' : 'Yearly (save 2 months)'}</button>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-3">
           {plans.filter(p => p.plan_id !== 'free').map((plan) => {
             const isCurrent = plan.plan_id === currentPlanId;
             const isUpgrade = plans.findIndex(p => p.plan_id === plan.plan_id) > plans.findIndex(p => p.plan_id === currentPlanId);
+            const isYearly = billingCycle === 'yearly';
+            const displayPrice = isYearly && plan.price_yearly ? plan.price_yearly : plan.price;
+            const cycleSuffix = plan.currency === 'omr'
+              ? (isRTL ? (isYearly ? 'ر.ع/سنوياً' : 'ر.ع/شهرياً') : (isYearly ? 'OMR/yr' : 'OMR/mo'))
+              : `${plan.currency}/${isYearly ? 'yr' : 'mo'}`;
             return (
               <div key={plan.plan_id}
                 className={`border rounded-lg p-4 transition-all ${isCurrent ? 'border-violet-300 bg-violet-50/50' : 'border-slate-200 hover:border-slate-300'}`}
                 data-testid={`plan-card-${plan.plan_id}`}>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-3">
                   <div>
                     <div className="flex items-center gap-2">
                       <h4 className="font-semibold text-slate-900">{plan.name}</h4>
-                      {isCurrent && <span className="text-xs bg-violet-600 text-white px-2 py-0.5 rounded-full">Current</span>}
+                      {isCurrent && <span className="text-xs bg-violet-600 text-white px-2 py-0.5 rounded-full">{isRTL ? 'الحالي' : 'Current'}</span>}
                     </div>
-                    <p className="text-2xl font-bold text-slate-900 mt-1">{plan.price} <span className="text-sm font-normal text-slate-500">{plan.currency === 'omr' ? (isRTL ? 'ر.ع/شهرياً' : 'OMR/mo') : `${plan.currency}/mo`}</span></p>
+                    <p className="text-2xl font-bold text-slate-900 mt-1">{displayPrice} <span className="text-sm font-normal text-slate-500">{cycleSuffix}</span></p>
                   </div>
                   {isCurrent ? (
-                    <div className="text-sm text-violet-600 font-medium">Active</div>
+                    <div className="text-sm text-violet-600 font-medium">{isRTL ? 'فعّال' : 'Active'}</div>
                   ) : isUpgrade ? (
-                    <button onClick={() => handleUpgrade(plan.plan_id)} disabled={checkoutLoading === plan.plan_id}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 text-white text-sm font-semibold rounded-lg hover:bg-violet-700 transition-colors disabled:opacity-50"
-                      data-testid={`upgrade-${plan.plan_id}-button`}>
-                      {checkoutLoading === plan.plan_id ? (
-                        <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>Processing...</>
-                      ) : (
-                        <><Lightning size={16} weight="fill" />Upgrade</>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      {thawaniEnabled && (
+                        <button onClick={() => handleThawaniUpgrade(plan.plan_id)} disabled={checkoutLoading === `thawani_${plan.plan_id}`}
+                          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 shadow-sm shadow-emerald-500/20"
+                          data-testid={`thawani-upgrade-${plan.plan_id}-button`}>
+                          {checkoutLoading === `thawani_${plan.plan_id}` ? (
+                            <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />{isRTL ? 'جارٍ التحويل...' : 'Processing...'}</>
+                          ) : (
+                            <><Lightning size={16} weight="fill" />{isRTL ? 'اشترك عبر ثواني' : 'Subscribe with Thawani'}</>
+                          )}
+                        </button>
                       )}
-                    </button>
+                    </div>
                   ) : null}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {plan.features.slice(0, 3).map((feat) => (
+                  {(isRTL ? plan.features_ar || plan.features : plan.features).slice(0, 3).map((feat) => (
                     <span key={feat} className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">{feat}</span>
                   ))}
-                  {plan.features.length > 3 && <span className="text-xs text-slate-400">+{plan.features.length - 3} more</span>}
+                  {plan.features.length > 3 && <span className="text-xs text-slate-400">+{plan.features.length - 3} {isRTL ? 'أخرى' : 'more'}</span>}
                 </div>
               </div>
             );

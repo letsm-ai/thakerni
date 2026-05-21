@@ -115,6 +115,14 @@ export const subscriptionApi = {
   checkPaymentStatus: (sessionId) => api.get(`/subscription/checkout/status/${sessionId}`),
 };
 
+// Thawani Pay (Omani payment gateway) API
+export const thawaniApi = {
+  getConfig: () => api.get('/payments/thawani/config'),
+  createSession: (planId, billingCycle = 'monthly') =>
+    api.post('/payments/thawani/create-session', { plan_id: planId, billing_cycle: billingCycle }),
+  verifySession: (sessionId) => api.get(`/payments/thawani/verify/${sessionId}`),
+};
+
 // Export API
 export const exportApi = {
   exportTasks: (format = 'json') => api.get('/export/tasks', { params: { format }, ...(format === 'csv' ? { responseType: 'blob' } : {}) }),
