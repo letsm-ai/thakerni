@@ -136,6 +136,16 @@ jobs:
                   && sleep 10 \
                   && docker compose -f docker-compose.prod.yml -f docker-compose.deploy.yml pull)
 
+            # Defensive: remove any orphan/renamed containers from prior failed recreates
+            # (fixes "No such container: <hash>_letsm_whatsapp" errors)
+            for svc in backend frontend whatsapp; do
+              ORPHANS=$(docker ps -a --filter "name=_letsm_${svc}" -q)
+              if [ -n "$ORPHANS" ]; then
+                echo "▶ Removing orphan ${svc} containers: $ORPHANS"
+                docker rm -f $ORPHANS || true
+              fi
+            done
+
             # Rolling restart (no downtime for frontend; backend may blip ~2s)
             docker compose -f docker-compose.prod.yml -f docker-compose.deploy.yml up -d --remove-orphans
 
