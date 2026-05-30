@@ -6,6 +6,12 @@ FROM node:20-alpine
 # Baileys needs git for some optional native deps & curl for healthcheck
 RUN apk add --no-cache git curl
 
+# Rewrite SSH GitHub URLs to HTTPS so transitive git dependencies of Baileys
+# (e.g. whiskeysockets/libsignal-node) install without an SSH key.
+RUN git config --global url."https://github.com/".insteadOf "ssh://git@github.com/" \
+ && git config --global url."https://github.com/".insteadOf "git@github.com:" \
+ && git config --global url."https://github.com/".insteadOf "git+ssh://git@github.com/"
+
 WORKDIR /app
 
 # Install deps first (layer caching)
