@@ -38,6 +38,7 @@ from routes.google_calendar import gcal_router
 from routes.voice import voice_router
 from routes.image_analysis import image_router
 from routes.thawani import thawani_router, downgrade_expired_subscriptions
+from routes.whatsapp_cloud import whatsapp_cloud_router
 
 # ── Create App ──
 app = FastAPI(title="Letsm AI - AI Assistant Platform")
@@ -57,6 +58,7 @@ app.include_router(gcal_router)
 app.include_router(voice_router)
 app.include_router(image_router)
 app.include_router(thawani_router)
+app.include_router(whatsapp_cloud_router)
 
 # ── CORS ──
 app.add_middleware(
