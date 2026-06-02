@@ -85,94 +85,25 @@ jobs:
           cache-from: type=gha,scope=whatsapp
           cache-to: type=gha,scope=whatsapp,mode=max
 
-  # ─────────────── 2. Deploy to VPS via SSH ───────────────
+  # ─────────────── 2. Deploy via VPS self-pull (no SSH from CI) ───────────────
+  # We avoid SSH/SCP from GitHub Actions entirely because Hostinger's fail2ban
+  # repeatedly bans the dynamic Azure runner IPs, causing i/o timeouts.
+  # Instead, a tiny systemd timer on the VPS polls GHCR every 60 seconds and
+  # pulls the latest tag automatically.
+  # See: /opt/letsm/scripts/auto-deploy.sh (deployed once via server-setup.sh)
   deploy:
-    name: Deploy to Hostinger VPS
+    name: Trigger VPS self-deploy
     needs: build
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout (for compose & nginx configs)
-        uses: actions/checkout@v4
-
-      - name: Deploy on VPS (git pull instead of SCP to avoid fail2ban issues)
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT || 22 }}
-          script: |
-            set -euo pipefail
-            cd /opt/letsm
-
-            # Pull latest compose & nginx configs from GitHub (replaces SCP step)
-            if [ -d .git ]; then
-              git fetch origin main && git reset --hard origin/main
-            else
-              echo "⚠️  /opt/letsm is not a git repo; run server-setup.sh once to clone"
-            fi
-
-            # Log into GHCR (token must be a Personal Access Token w/ read:packages)
-            echo "${{ secrets.GHCR_PULL_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-            # Defensive: clean up any orphan leases from previous interrupted pulls
-            # (fixes "unable to lease content: lease does not exist" errors)
-            docker system prune -f --filter "until=1h" || true
-
-            # Override compose to use prebuilt images instead of building on VPS
-            export IMAGE_TAG=${{ needs.build.outputs.image_tag }}
-            export REGISTRY=${{ env.REGISTRY }}
-            export IMAGE_PREFIX=${{ env.IMAGE_PREFIX }}
-
-            # Pull new images (with retry on lease errors)
-            docker compose -f docker-compose.prod.yml -f docker-compose.deploy.yml pull \
-              || (echo "⚠️  Pull failed — restarting Docker and retrying..." \
-                  && sudo systemctl restart docker \
-                  && sleep 10 \
-                  && docker compose -f docker-compose.prod.yml -f docker-compose.deploy.yml pull)
-
-            # Defensive: remove any orphan/renamed containers from prior failed recreates
-            # (fixes "No such container: <hash>_letsm_whatsapp" errors)
-            for svc in backend frontend whatsapp; do
-              ORPHANS=$(docker ps -a --filter "name=_letsm_${svc}" -q)
-              if [ -n "$ORPHANS" ]; then
-                echo "▶ Removing orphan ${svc} containers: $ORPHANS"
-                docker rm -f $ORPHANS || true
-              fi
-            done
-
-            # Rolling restart (no downtime for frontend; backend may blip ~2s)
-            docker compose -f docker-compose.prod.yml -f docker-compose.deploy.yml up -d --remove-orphans
-
-            # CRITICAL: reload nginx to refresh upstream DNS cache after backend/frontend recreate.
-            # Without this, nginx keeps the stale container IPs and returns 502 until it self-recovers.
-            echo "▶ Reloading nginx to refresh upstream IPs..."
-            sleep 5
-            docker exec letsm_nginx nginx -s reload || docker compose -f docker-compose.prod.yml restart nginx
-
-            # Cleanup old images
-            docker image prune -af --filter "until=72h"
-
-            # Smoke test - retry up to 60s for backend to be ready after recreate
-            echo "▶ Waiting for backend to be healthy..."
-            sleep 10
-            for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
-              if curl -fsS --max-time 5 https://letsm.ai/api/health > /dev/null 2>&1; then
-                echo "✅ Backend healthy on attempt $i"
-                break
-              fi
-              if [ "$i" = "12" ]; then
-                echo "❌ Health check failed after 12 attempts"
-                docker compose -f docker-compose.prod.yml logs --tail=50 backend nginx
-                exit 1
-              fi
-              echo "  attempt $i/12 - backend not ready, waiting 5s..."
-              sleep 5
-            done
-            echo "✅ Deploy successful: ${{ needs.build.outputs.image_tag }}"
-
-      - name: Notify on failure
-        if: failure()
+      - name: Tag latest image
         run: |
-          echo "::error::Deployment failed. Check VPS logs: ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'docker compose -f /opt/letsm/docker-compose.prod.yml logs --tail=200'"
+          echo "✅ Image pushed to GHCR: ${{ needs.build.outputs.image_tag }}"
+          echo "📥 VPS auto-deploy timer (runs every 60s) will pull this within 1 minute."
+          echo "🔍 Monitor: ssh letsm@<vps> 'tail -f /var/log/letsm-auto-deploy.log'"
+
+      - name: Notify (optional, no-op if unreachable)
+        continue-on-error: true
+        run: |
+          curl -fsS --max-time 5 "https://letsm.ai/api/health" || echo "(letsm.ai not reachable from runner, but VPS will still self-pull)"

@@ -1,0 +1,11 @@
+[Unit]
+Description=Letsm AI - Auto deploy from GHCR
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/letsm/scripts/auto-deploy.sh
+User=root
+StandardOutput=journal
+StandardError=journal
