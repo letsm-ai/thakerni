@@ -28,7 +28,40 @@ export default function AdminAudit() {
     if (action === 'suspend') return 'bg-red-50 text-red-700';
     if (action === 'activate') return 'bg-green-50 text-green-700';
     if (action === 'role_change') return 'bg-blue-50 text-blue-700';
+    if (action === 'subscription_change') return 'bg-violet-50 text-violet-700';
     return 'bg-slate-50 text-slate-600';
+  };
+
+  const renderDetails = (log) => {
+    if (log.action === 'subscription_change') {
+      const fromP = log.from_plan || log.details?.from_plan || 'free';
+      const toP = log.to_plan || log.details?.to_plan || '—';
+      const cycle = log.billing_cycle || log.details?.billing_cycle;
+      const expires = log.expires_at || log.details?.expires_at;
+      return (
+        <div className="text-xs text-slate-600 space-y-0.5">
+          <div>
+            <span className="font-medium capitalize text-slate-500">{fromP}</span>
+            <span className="mx-1 text-slate-300">→</span>
+            <span className="font-semibold capitalize text-violet-700">{toP}</span>
+            {cycle && <span className="ml-1 text-slate-400">({cycle})</span>}
+          </div>
+          {log.target_email && <div className="text-slate-400 truncate max-w-xs">{log.target_email}</div>}
+          {expires && toP !== 'free' && (
+            <div className="text-slate-400">
+              {isRTL ? 'ينتهي:' : 'expires:'} {new Date(expires).toLocaleDateString()}
+            </div>
+          )}
+        </div>
+      );
+    }
+    if (log.action === 'role_change' && log.details?.new_role) {
+      return <span className="text-xs text-slate-600 capitalize">→ {log.details.new_role}</span>;
+    }
+    if (log.details) {
+      return <span className="text-xs text-slate-600">{JSON.stringify(log.details)}</span>;
+    }
+    return <span className="text-xs text-slate-400">—</span>;
   };
 
   return (
@@ -42,11 +75,11 @@ export default function AdminAudit() {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-50 text-slate-500 text-left">
-              <th className="px-4 py-2.5 font-medium">Action</th>
-              <th className="px-4 py-2.5 font-medium">Actor</th>
-              <th className="px-4 py-2.5 font-medium">Target</th>
-              <th className="px-4 py-2.5 font-medium">Details</th>
-              <th className="px-4 py-2.5 font-medium">Time</th>
+              <th className="px-4 py-2.5 font-medium">{isRTL ? 'الإجراء' : 'Action'}</th>
+              <th className="px-4 py-2.5 font-medium">{isRTL ? 'المسؤول' : 'Actor'}</th>
+              <th className="px-4 py-2.5 font-medium">{isRTL ? 'المستخدم' : 'Target'}</th>
+              <th className="px-4 py-2.5 font-medium">{isRTL ? 'التفاصيل' : 'Details'}</th>
+              <th className="px-4 py-2.5 font-medium">{isRTL ? 'الوقت' : 'Time'}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -61,7 +94,7 @@ export default function AdminAudit() {
                 </td>
                 <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{log.actor_id}</td>
                 <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{log.target_id || '—'}</td>
-                <td className="px-4 py-2.5 text-xs text-slate-600">{log.details ? JSON.stringify(log.details) : '—'}</td>
+                <td className="px-4 py-2.5">{renderDetails(log)}</td>
                 <td className="px-4 py-2.5 text-slate-500">{new Date(log.timestamp).toLocaleString()}</td>
               </tr>
             ))}

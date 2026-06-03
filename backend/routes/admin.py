@@ -248,9 +248,13 @@ async def admin_update_subscription(user_id: str, request: Request, user: dict =
     if billing_cycle not in ("monthly", "yearly"):
         raise HTTPException(status_code=400, detail="Invalid billing_cycle")
 
-    target = await db.users.find_one({"user_id": user_id}, {"_id": 0, "email": 1, "subscription_plan": 1})
+    target = await db.users.find_one(
+        {"user_id": user_id},
+        {"_id": 0, "email": 1, "name": 1, "subscription_plan": 1}
+    )
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
+    previous_plan = target.get("subscription_plan", "free") or "free"
 
     now = datetime.now(timezone.utc)
     update_doc = {
@@ -279,12 +283,40 @@ async def admin_update_subscription(user_id: str, request: Request, user: dict =
         "actor_id": user["user_id"],
         "target_id": user_id,
         "target_email": target.get("email"),
-        "from_plan": target.get("subscription_plan", "free"),
+        "from_plan": previous_plan,
         "to_plan": plan_id,
         "billing_cycle": update_doc.get("subscription_cycle"),
         "expires_at": update_doc.get("subscription_expires_at"),
+        "details": {
+            "from_plan": previous_plan,
+            "to_plan": plan_id,
+            "billing_cycle": update_doc.get("subscription_cycle"),
+            "expires_at": update_doc.get("subscription_expires_at"),
+        },
         "timestamp": now.isoformat(),
     })
+
+    # Notify the user via email (best-effort — never blocks the admin action)
+    if previous_plan != plan_id and target.get("email"):
+        try:
+            from routes.admin_emails import send_admin_subscription_change_email
+            expires_dt = None
+            if update_doc.get("subscription_expires_at"):
+                try:
+                    expires_dt = datetime.fromisoformat(update_doc["subscription_expires_at"])
+                except Exception:
+                    expires_dt = None
+            await send_admin_subscription_change_email(
+                customer_email=target["email"],
+                customer_name=target.get("name"),
+                from_plan=previous_plan,
+                to_plan=plan_id,
+                billing_cycle=update_doc.get("subscription_cycle"),
+                expires_at=expires_dt,
+            )
+        except Exception as e:
+            logger.error(f"Failed to dispatch admin subscription change email: {e}")
+
     return {
         "success": True,
         "user_id": user_id,
