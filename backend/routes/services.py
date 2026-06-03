@@ -404,7 +404,7 @@ RULES:
 
     try:
         chat = LlmChat(api_key=EMERGENT_LLM_KEY, session_id=session_id, system_message=system_prompt)
-        chat.with_model("openai", "gpt-5.2")
+        chat.with_model("openai", "gpt-4o-mini")
         ai_response = await chat.send_message(UserMessage(text=body.message))
 
         await db.whatsapp_messages.insert_one({

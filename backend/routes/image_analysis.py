@@ -44,7 +44,7 @@ async def analyze_image(
             session_id=f"img_{uuid.uuid4().hex[:8]}",
             system_message="You are an expert image analyst. Describe images accurately and thoroughly. Support Arabic and English — respond in the user's language."
         )
-        chat.with_model("openai", "gpt-5.2")
+        chat.with_model("openai", "gpt-4o-mini")
 
         image_content = ImageContent(image_base64=image_b64)
         user_message = UserMessage(text=prompt, file_contents=[image_content])

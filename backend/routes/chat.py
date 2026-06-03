@@ -258,7 +258,7 @@ async def send_chat_message(message: ChatMessageCreate, user: dict = Depends(get
             ai_response = "Sure!" + direct
         else:
             chat = LlmChat(api_key=EMERGENT_LLM_KEY, session_id=conv_id, system_message=SYSTEM_PROMPT)
-            chat.with_model("openai", "gpt-5.2")
+            chat.with_model("openai", "gpt-4o-mini")
             ai_response = await chat.send_message(UserMessage(text=message.message))
             action = await parse_and_create_from_ai(message.message, user, ai_response)
             if action:
@@ -322,7 +322,7 @@ async def guest_chat(request: Request, body: GuestChatRequest):
     try:
         chat = LlmChat(api_key=EMERGENT_LLM_KEY, session_id=session_id,
             system_message="You are Letsm AI on the landing page. Be friendly, concise (2-3 sentences). Show capabilities. Match user's language. Encourage signup.")
-        chat.with_model("openai", "gpt-5.2")
+        chat.with_model("openai", "gpt-4o-mini")
         ai_response = await chat.send_message(UserMessage(text=body.message))
         return {"response": ai_response, "session_id": session_id, "limited": False}
     except Exception as e:
