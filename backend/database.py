@@ -19,8 +19,13 @@ JWT_SECRET = os.environ.get('JWT_SECRET_KEY', 'default-secret-key')
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24 * 7  # 7 days
 
-# Emergent LLM Key
-EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
+# LLM Key — prefers direct OPENAI_API_KEY when set, falls back to Emergent
+# universal key. Direct OpenAI key avoids the Emergent free-tier external
+# access restriction and uses your own billing.
+_OPENAI_DIRECT = os.environ.get('OPENAI_API_KEY')
+_EMERGENT_KEY = os.environ.get('EMERGENT_LLM_KEY')
+EMERGENT_LLM_KEY = _OPENAI_DIRECT or _EMERGENT_KEY
+LLM_KEY_SOURCE = 'openai_direct' if _OPENAI_DIRECT else ('emergent' if _EMERGENT_KEY else None)
 
 # Stripe Config
 STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
