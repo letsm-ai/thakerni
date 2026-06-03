@@ -4,7 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import FloatingChat from '../components/FloatingChat';
 import {
   ArrowRight, Play, Check, Star, Globe, CheckCircle, Sparkle,
-  CaretRight, X, List, ArrowUp,
+  CaretRight, X, List, ArrowUp, PaperPlaneTilt, Calendar, ChatTeardrop,
 } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
 import {

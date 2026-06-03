@@ -123,3 +123,4 @@ uptime_data/
 
 # Mongo dumps
 *.archive.gz
+frontend/node_modules/.cache/default-development/14.pack
