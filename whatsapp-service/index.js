@@ -119,8 +119,25 @@ async function initWhatsApp() {
 async function handleIncomingMessage(message) {
     try {
         const rawJid = message.key.remoteJid;
-        // Extract phone number from jid (handle both @s.whatsapp.net and @lid)
-        const senderNumber = rawJid.replace('@s.whatsapp.net', '').replace('@lid', '').split(':')[0];
+        const isLid = rawJid.endsWith('@lid');
+
+        // For LID-only contacts (newer WhatsApp privacy feature), the JID is an
+        // internal identifier — not the real phone number. We must obtain the
+        // real PN via `message.key.senderPn` (sent by Baileys ≥ 7) or fall back
+        // to `verifiedBizName` for business accounts. If neither is present,
+        // the link cannot be completed reliably; we ask the user for their
+        // phone number explicitly.
+        const senderPn = message.key.senderPn || message.key.senderLid
+            ? (message.key.senderPn || null)
+            : null;
+        const realPnFromJid = !isLid
+            ? rawJid.replace('@s.whatsapp.net', '').split(':')[0]
+            : null;
+
+        const senderNumber = realPnFromJid
+            || (senderPn ? senderPn.replace('@s.whatsapp.net', '').split(':')[0] : null)
+            || rawJid.replace('@lid', '').replace('@s.whatsapp.net', '').split(':')[0];
+
         const replyJid = rawJid;
 
         let messageText = message.message.conversation ||
@@ -165,6 +182,17 @@ async function handleIncomingMessage(message) {
         // Check if this is a linking code
         const trimmed = messageText.trim();
         if (trimmed.startsWith('LINK-') && trimmed.length <= 15) {
+            // Block LID-only senders (newer WhatsApp privacy) — we cannot
+            // resolve their real phone number from the JID alone.
+            if (rawJid.endsWith('@lid') && !message.key.senderPn) {
+                await sendMessage(replyJid,
+                    "❌ تعذّر ربط الحساب بسبب إعدادات الخصوصية في واتساب.\n\n" +
+                    "✅ الحل: من واتساب اذهب إلى:\n" +
+                    "Settings → Account → Advanced → Advanced contact privacy\n" +
+                    "وأطفئ خيار 'Hide my phone number' ثم حاول مرة ثانية.\n\n" +
+                    "Or: send the code from a different number.");
+                return;
+            }
             await handleLinkingCode(senderNumber, replyJid, trimmed);
             return;
         }
