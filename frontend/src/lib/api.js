@@ -162,6 +162,7 @@ export const adminApi = {
   getRevenueChart: (days = 30) => api.get('/admin/billing/revenue', { params: { days } }),
   getSystemHealth: () => api.get('/admin/system/health'),
   getAuditLogs: (params) => api.get('/admin/audit-logs', { params }),
+  exportAuditLogs: (params) => api.get('/admin/audit-logs/export', { params, responseType: 'blob' }),
   getRoles: () => api.get('/admin/roles'),
   getUsage: () => api.get('/admin/usage'),
 };
@@ -189,6 +190,7 @@ export const teamApi = {
   getMessages: (page) => api.get('/teams/messages', { params: { page } }),
   sendMessage: (content, conversation_id) => api.post('/teams/messages', { content, conversation_id }),
   getAnalytics: () => api.get('/teams/analytics'),
+  getCalendar: (params) => api.get('/teams/calendar', { params }),
 };
 
 export default api;

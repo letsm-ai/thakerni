@@ -533,6 +533,115 @@ async def delete_team_reminder(reminder_id: str, user: dict = Depends(_get_user)
 
 
 # ══════════════════════════════════════════
+#  TEAM SHARED CALENDAR
+# ══════════════════════════════════════════
+
+@team_router.get("/calendar")
+async def get_team_calendar(
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    user: dict = Depends(_get_user),
+):
+    """Returns all team tasks (with due_date) and reminders as unified calendar
+    events for the entire team. Each event includes the owner/assignee name so
+    the UI can colour-code by team member.
+
+    Query params: from_date, to_date (ISO strings — optional, defaults to all).
+    """
+    db = _db()
+    mem = await require_team_member(db, user["user_id"])
+    team_id = mem["team_id"]
+
+    # Build member cache (id → {name, email})
+    members = await db.team_members.find(
+        {"team_id": team_id, "status": "active"},
+        {"_id": 0, "user_id": 1, "email": 1}
+    ).to_list(100)
+    member_emails = {m["user_id"]: m["email"] for m in members}
+    user_ids = list(member_emails.keys())
+    users_docs = await db.users.find(
+        {"user_id": {"$in": user_ids}},
+        {"_id": 0, "user_id": 1, "name": 1}
+    ).to_list(100)
+    member_names = {u["user_id"]: u.get("name") for u in users_docs}
+
+    def _enrich(uid):
+        return {
+            "user_id": uid,
+            "name": member_names.get(uid) or (member_emails.get(uid, "").split("@")[0] if uid else "Unknown"),
+            "email": member_emails.get(uid, ""),
+        }
+
+    # Fetch tasks with due_date
+    task_query = {"team_id": team_id, "due_date": {"$exists": True, "$ne": None}}
+    if from_date or to_date:
+        rng = {}
+        if from_date:
+            rng["$gte"] = from_date
+        if to_date:
+            rng["$lte"] = to_date
+        task_query["due_date"] = {**task_query["due_date"], **rng}
+
+    tasks = await db.team_tasks.find(task_query, {"_id": 0}).sort("due_date", 1).to_list(500)
+
+    # Fetch reminders
+    rem_query = {"team_id": team_id, "active": True}
+    if from_date or to_date:
+        rng = {}
+        if from_date:
+            rng["$gte"] = from_date
+        if to_date:
+            rng["$lte"] = to_date
+        rem_query["reminder_time"] = rng
+
+    reminders = await db.team_reminders.find(rem_query, {"_id": 0}).sort("reminder_time", 1).to_list(500)
+
+    events = []
+    for t in tasks:
+        owner_id = t.get("assigned_to") or t.get("created_by")
+        events.append({
+            "id": f"task_{t['task_id']}",
+            "kind": "task",
+            "title": t.get("title", ""),
+            "description": t.get("description", ""),
+            "date": t.get("due_date"),
+            "completed": bool(t.get("completed")),
+            "priority": t.get("priority"),
+            "owner": _enrich(owner_id) if owner_id else None,
+            "created_by": _enrich(t.get("created_by")) if t.get("created_by") else None,
+            "ref_id": t.get("task_id"),
+        })
+
+    for r in reminders:
+        events.append({
+            "id": f"reminder_{r['reminder_id']}",
+            "kind": "reminder",
+            "title": r.get("title", ""),
+            "description": r.get("description", ""),
+            "date": r.get("reminder_time"),
+            "completed": False,
+            "owner": _enrich(r.get("created_by")) if r.get("created_by") else None,
+            "created_by": _enrich(r.get("created_by")) if r.get("created_by") else None,
+            "ref_id": r.get("reminder_id"),
+        })
+
+    events.sort(key=lambda e: e["date"] or "")
+
+    # Members list (for legend / colour-coding)
+    members_list = [{"user_id": uid, "name": _enrich(uid)["name"], "email": member_emails.get(uid, "")} for uid in user_ids]
+
+    return {
+        "events": events,
+        "members": members_list,
+        "counts": {
+            "tasks": len(tasks),
+            "reminders": len(reminders),
+            "total": len(events),
+        },
+    }
+
+
+# ══════════════════════════════════════════
 #  TEAM CONVERSATIONS
 # ══════════════════════════════════════════
 

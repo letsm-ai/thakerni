@@ -469,13 +469,117 @@ async def admin_system_health(user: dict = Depends(require_permission("system"))
 #  AUDIT LOGS
 # ══════════════════════════════════════════
 
+def _build_audit_query(action: Optional[str], actor: Optional[str], target: Optional[str],
+                      search: Optional[str], from_date: Optional[str], to_date: Optional[str]) -> dict:
+    query = {}
+    if action and action != "all":
+        query["action"] = action
+    if actor:
+        query["actor_id"] = actor
+    if target:
+        query["target_id"] = target
+    if search:
+        query["$or"] = [
+            {"target_email": {"$regex": search, "$options": "i"}},
+            {"target_id": {"$regex": search, "$options": "i"}},
+            {"actor_id": {"$regex": search, "$options": "i"}},
+        ]
+    if from_date or to_date:
+        ts = {}
+        if from_date:
+            ts["$gte"] = from_date
+        if to_date:
+            ts["$lte"] = to_date
+        query["timestamp"] = ts
+    return query
+
+
 @admin_router.get("/audit-logs")
-async def admin_audit_logs(page: int = 1, limit: int = 30, user: dict = Depends(require_permission("audit"))):
+async def admin_audit_logs(
+    page: int = 1,
+    limit: int = 30,
+    action: Optional[str] = None,
+    actor: Optional[str] = None,
+    target: Optional[str] = None,
+    search: Optional[str] = None,
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    user: dict = Depends(require_permission("audit")),
+):
     db = _db()
+    query = _build_audit_query(action, actor, target, search, from_date, to_date)
     skip = (page - 1) * limit
-    total = await db.audit_logs.count_documents({})
-    logs = await db.audit_logs.find({}, {"_id": 0}).sort("timestamp", -1).skip(skip).limit(limit).to_list(limit)
-    return {"logs": logs, "total": total, "page": page}
+    total = await db.audit_logs.count_documents(query)
+    logs = await db.audit_logs.find(query, {"_id": 0}).sort("timestamp", -1).skip(skip).limit(limit).to_list(limit)
+
+    # Available action types (for filter dropdown)
+    actions_cursor = db.audit_logs.aggregate([
+        {"$group": {"_id": "$action"}},
+        {"$sort": {"_id": 1}},
+    ])
+    action_types = [a["_id"] for a in await actions_cursor.to_list(50) if a["_id"]]
+
+    return {
+        "logs": logs,
+        "total": total,
+        "page": page,
+        "pages": (total + limit - 1) // limit if total else 0,
+        "action_types": action_types,
+    }
+
+
+@admin_router.get("/audit-logs/export")
+async def admin_audit_logs_export(
+    action: Optional[str] = None,
+    actor: Optional[str] = None,
+    target: Optional[str] = None,
+    search: Optional[str] = None,
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    user: dict = Depends(require_permission("audit")),
+):
+    """Export audit logs as CSV. Honors the same filters as the list endpoint."""
+    from fastapi.responses import StreamingResponse
+    import csv
+    import io
+    import json as _json
+
+    db = _db()
+    query = _build_audit_query(action, actor, target, search, from_date, to_date)
+    logs = await db.audit_logs.find(query, {"_id": 0}).sort("timestamp", -1).to_list(10000)
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow([
+        "timestamp", "action", "actor_id", "target_id", "target_email",
+        "from_plan", "to_plan", "billing_cycle", "expires_at", "details",
+    ])
+    for log in logs:
+        details = log.get("details")
+        if isinstance(details, dict):
+            details_str = _json.dumps(details, ensure_ascii=False)
+        else:
+            details_str = details or ""
+        writer.writerow([
+            log.get("timestamp", ""),
+            log.get("action", ""),
+            log.get("actor_id", ""),
+            log.get("target_id", ""),
+            log.get("target_email", ""),
+            log.get("from_plan", ""),
+            log.get("to_plan", ""),
+            log.get("billing_cycle", ""),
+            log.get("expires_at", ""),
+            details_str,
+        ])
+    buf.seek(0)
+
+    filename = f"audit-logs-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.csv"
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 # ══════════════════════════════════════════

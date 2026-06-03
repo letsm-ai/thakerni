@@ -4,13 +4,16 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import {
   Users, UserPlus, CheckSquare, Bell, ChatCircle, ChartBar,
+  Calendar,
   Crown, Shield, User, Trash, X, PaperPlaneTilt, Plus, Check
 } from '@phosphor-icons/react';
+import TeamCalendarTab from '../components/team/TeamCalendarTab';
 
 const TABS = [
   { id: 'team', label: 'Team', labelAr: 'الفريق', icon: Users },
   { id: 'tasks', label: 'Tasks', labelAr: 'المهام', icon: CheckSquare },
   { id: 'reminders', label: 'Reminders', labelAr: 'التذكيرات', icon: Bell },
+  { id: 'calendar', label: 'Calendar', labelAr: 'التقويم', icon: Calendar },
   { id: 'chat', label: 'Chat', labelAr: 'المحادثة', icon: ChatCircle },
   { id: 'analytics', label: 'Analytics', labelAr: 'التحليلات', icon: ChartBar },
 ];
@@ -408,6 +411,7 @@ const AnalyticsTab = ({ t }) => {
 export default function Team() {
   const { user } = useAuth();
   const { language } = useLanguage();
+  const isRTL = language === 'ar';
   const t = useCallback((en, ar) => language === 'ar' ? ar : en, [language]);
 
   const [team, setTeam] = useState(null);
@@ -495,6 +499,7 @@ export default function Team() {
       {activeTab === 'team' && <TeamTab team={team} members={members} membership={membership} onInvite={handleInvite} onRemove={handleRemove} onRoleChange={handleRoleChange} t={t} />}
       {activeTab === 'tasks' && <TasksTab members={activeMembers} t={t} />}
       {activeTab === 'reminders' && <RemindersTab t={t} />}
+      {activeTab === 'calendar' && <TeamCalendarTab t={t} isRTL={isRTL} />}
       {activeTab === 'chat' && <ChatTab user={user} t={t} />}
       {activeTab === 'analytics' && <AnalyticsTab t={t} />}
     </div>
