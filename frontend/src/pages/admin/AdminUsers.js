@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { adminApi } from '../../lib/api';
 import { useLanguage } from '../../context/LanguageContext';
-import { Search, ChevronLeft, ChevronRight, Shield, UserX, UserCheck, Eye } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Shield, UserX, UserCheck, Eye, Crown } from 'lucide-react';
 
 const ROLES = ['user', 'viewer', 'operations', 'developer', 'admin'];
 const PLANS = ['all', 'free', 'pro', 'business'];
@@ -60,6 +60,37 @@ export default function AdminUsers() {
       await adminApi.updateUserStatus(userId, !current);
       load();
     } catch (e) { alert(e.response?.data?.detail || 'Failed'); }
+  };
+
+  // ── Subscription override ──
+  const [subModalOpen, setSubModalOpen] = useState(false);
+  const [subPlan, setSubPlan] = useState('pro');
+  const [subCycle, setSubCycle] = useState('monthly');
+  const [subDays, setSubDays] = useState('');
+  const [subSaving, setSubSaving] = useState(false);
+
+  const openSubModal = () => {
+    setSubPlan(userDetail?.user.subscription_plan && userDetail.user.subscription_plan !== 'free' ? userDetail.user.subscription_plan : 'pro');
+    setSubCycle(userDetail?.user.subscription_cycle || 'monthly');
+    setSubDays('');
+    setSubModalOpen(true);
+  };
+
+  const saveSubscription = async () => {
+    if (!userDetail) return;
+    setSubSaving(true);
+    try {
+      const days = subDays.trim() ? parseInt(subDays, 10) : null;
+      await adminApi.updateUserSubscription(userDetail.user.user_id, subPlan, subCycle, days);
+      setSubModalOpen(false);
+      await load();
+      const refreshed = await adminApi.getUser(userDetail.user.user_id);
+      setUserDetail(refreshed.data);
+    } catch (e) {
+      alert(e.response?.data?.detail || 'Failed to update subscription');
+    } finally {
+      setSubSaving(false);
+    }
   };
 
   return (
@@ -175,9 +206,24 @@ export default function AdminUsers() {
               <div className="flex justify-between"><span className="text-slate-400">User ID</span><span className="text-slate-700 font-mono text-xs">{userDetail.user.user_id}</span></div>
               <div className="flex justify-between"><span className="text-slate-400">Joined</span><span className="text-slate-700">{new Date(userDetail.user.created_at).toLocaleDateString()}</span></div>
               <div className="flex justify-between"><span className="text-slate-400">Plan</span><span className="capitalize text-slate-700">{userDetail.user.subscription_plan || 'free'}</span></div>
+              {userDetail.user.subscription_expires_at && (
+                <div className="flex justify-between"><span className="text-slate-400">Expires</span><span className="text-slate-700 text-xs">{new Date(userDetail.user.subscription_expires_at).toLocaleDateString()}</span></div>
+              )}
               <div className="flex justify-between"><span className="text-slate-400">Country</span><span className="text-slate-700">{userDetail.user.geo?.country || '—'}</span></div>
               <div className="flex justify-between"><span className="text-slate-400">City</span><span className="text-slate-700">{userDetail.user.geo?.city || '—'}</span></div>
               <div className="flex justify-between"><span className="text-slate-400">Last Login</span><span className="text-slate-700">{userDetail.user.last_login_at ? new Date(userDetail.user.last_login_at).toLocaleString() : '—'}</span></div>
+            </div>
+
+            {/* Subscription override button */}
+            <div className="mb-5">
+              <button
+                onClick={openSubModal}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm font-semibold rounded-lg hover:from-violet-700 hover:to-indigo-700 transition-colors"
+                data-testid="admin-change-subscription-button"
+              >
+                <Crown size={14} />
+                {isRTL ? 'تغيير الاشتراك' : 'Change Subscription'}
+              </button>
             </div>
 
             {/* Role selector */}
@@ -230,6 +276,77 @@ export default function AdminUsers() {
           </div>
         )}
       </div>
+
+      {/* Subscription override modal */}
+      {subModalOpen && userDetail && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => !subSaving && setSubModalOpen(false)} data-testid="subscription-modal">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
+                <Crown size={20} className="text-violet-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900">{isRTL ? 'تغيير اشتراك المستخدم' : 'Change Subscription'}</h3>
+                <p className="text-xs text-slate-500">{userDetail.user.email}</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-medium text-slate-500 mb-1.5 block">{isRTL ? 'الباقة' : 'Plan'}</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['free', 'pro', 'business'].map(p => (
+                    <button key={p} onClick={() => setSubPlan(p)}
+                      className={`px-3 py-2 text-sm rounded-lg font-medium capitalize transition-colors ${subPlan === p ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                      data-testid={`modal-plan-${p}`}
+                    >{p}</button>
+                  ))}
+                </div>
+              </div>
+
+              {subPlan !== 'free' && (
+                <>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 mb-1.5 block">{isRTL ? 'نوع الفترة' : 'Billing Cycle'}</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['monthly', 'yearly'].map(c => (
+                        <button key={c} onClick={() => setSubCycle(c)}
+                          className={`px-3 py-2 text-sm rounded-lg font-medium capitalize transition-colors ${subCycle === c ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                          data-testid={`modal-cycle-${c}`}
+                        >{c}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 mb-1.5 block">
+                      {isRTL ? 'مدة مخصصة (أيام) — اختياري' : 'Custom Duration (days) — optional'}
+                    </label>
+                    <input type="number" min="1" placeholder={subCycle === 'yearly' ? '365' : '30'}
+                      value={subDays} onChange={(e) => setSubDays(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+                      data-testid="modal-duration-input"
+                    />
+                    <p className="text-xs text-slate-400 mt-1">
+                      {isRTL ? 'اتركه فارغاً للقيمة الافتراضية' : 'Leave blank to use default'}
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setSubModalOpen(false)} disabled={subSaving}
+                className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-50"
+                data-testid="modal-cancel-button"
+              >{isRTL ? 'إلغاء' : 'Cancel'}</button>
+              <button onClick={saveSubscription} disabled={subSaving}
+                className="flex-1 px-4 py-2.5 bg-violet-600 text-white font-semibold rounded-lg hover:bg-violet-700 transition-colors disabled:opacity-50"
+                data-testid="modal-save-button"
+              >{subSaving ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : (isRTL ? 'حفظ التغيير' : 'Apply Change')}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

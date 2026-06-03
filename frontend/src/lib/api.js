@@ -149,6 +149,12 @@ export const adminApi = {
   getUser: (id) => api.get(`/admin/users/${id}`),
   updateUserRole: (id, role) => api.put(`/admin/users/${id}/role`, { role }),
   updateUserStatus: (id, suspended) => api.put(`/admin/users/${id}/status`, { suspended }),
+  updateUserSubscription: (id, planId, billingCycle = 'monthly', durationDays = null) =>
+    api.put(`/admin/users/${id}/subscription`, {
+      plan_id: planId,
+      billing_cycle: billingCycle,
+      ...(durationDays != null ? { duration_days: durationDays } : {}),
+    }),
   getSignupTrends: (days = 30) => api.get('/admin/analytics/signups', { params: { days } }),
   getActivityTrends: (days = 30) => api.get('/admin/analytics/activity', { params: { days } }),
   getCountryStats: () => api.get('/admin/analytics/countries'),

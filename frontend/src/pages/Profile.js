@@ -137,6 +137,23 @@ const Profile = () => {
     finally { setCheckoutLoading(null); }
   };
 
+  const handleThawaniUpgrade = async (planId) => {
+    const key = `thawani_${planId}`;
+    setCheckoutLoading(key);
+    try {
+      const res = await thawaniApi.createSession(planId, billingCycle);
+      if (res.data.url) {
+        window.location.href = res.data.url;
+      } else {
+        toast.error(isRTL ? 'تعذّر إنشاء جلسة الدفع' : 'Could not create payment session');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || (isRTL ? 'فشل في إنشاء جلسة الدفع' : 'Failed to start Thawani checkout'));
+    } finally {
+      setCheckoutLoading(null);
+    }
+  };
+
   const handleExport = async (type) => {
     setExporting(type);
     try {

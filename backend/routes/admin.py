@@ -227,6 +227,73 @@ async def admin_toggle_user_status(user_id: str, request: Request, user: dict = 
     return {"success": True, "message": f"User {'suspended' if suspended else 'activated'}"}
 
 
+@admin_router.put("/users/{user_id}/subscription")
+async def admin_update_subscription(user_id: str, request: Request, user: dict = Depends(require_permission("subscriptions"))):
+    """Manually upgrade/downgrade a user's subscription. Admin-only.
+
+    Body: {
+        "plan_id": "free" | "pro" | "business",
+        "billing_cycle": "monthly" | "yearly",  (default "monthly", ignored for free)
+        "duration_days": int                    (optional override; default 30 monthly / 365 yearly)
+    }
+    """
+    db = _db()
+    body = await request.json()
+    plan_id = body.get("plan_id")
+    billing_cycle = body.get("billing_cycle", "monthly")
+    duration_days = body.get("duration_days")
+
+    if plan_id not in ("free", "pro", "business"):
+        raise HTTPException(status_code=400, detail="Invalid plan_id")
+    if billing_cycle not in ("monthly", "yearly"):
+        raise HTTPException(status_code=400, detail="Invalid billing_cycle")
+
+    target = await db.users.find_one({"user_id": user_id}, {"_id": 0, "email": 1, "subscription_plan": 1})
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    now = datetime.now(timezone.utc)
+    update_doc = {
+        "subscription": plan_id,
+        "subscription_plan": plan_id,
+        "subscription_updated_at": now.isoformat(),
+    }
+
+    if plan_id == "free":
+        update_doc["subscription_cycle"] = None
+        update_doc["subscription_expires_at"] = None
+        update_doc["subscription_provider"] = None
+    else:
+        if duration_days is None:
+            duration_days = 365 if billing_cycle == "yearly" else 30
+        update_doc["subscription_cycle"] = billing_cycle
+        update_doc["subscription_started_at"] = now.isoformat()
+        update_doc["subscription_expires_at"] = (now + timedelta(days=int(duration_days))).isoformat()
+        update_doc["subscription_provider"] = "admin_manual"
+
+    await db.users.update_one({"user_id": user_id}, {"$set": update_doc})
+
+    await db.audit_logs.insert_one({
+        "log_id": str(uuid.uuid4()),
+        "action": "subscription_change",
+        "actor_id": user["user_id"],
+        "target_id": user_id,
+        "target_email": target.get("email"),
+        "from_plan": target.get("subscription_plan", "free"),
+        "to_plan": plan_id,
+        "billing_cycle": update_doc.get("subscription_cycle"),
+        "expires_at": update_doc.get("subscription_expires_at"),
+        "timestamp": now.isoformat(),
+    })
+    return {
+        "success": True,
+        "user_id": user_id,
+        "plan_id": plan_id,
+        "billing_cycle": update_doc.get("subscription_cycle"),
+        "expires_at": update_doc.get("subscription_expires_at"),
+    }
+
+
 # ══════════════════════════════════════════
 #  ANALYTICS — Signup & Activity Trends
 # ══════════════════════════════════════════
