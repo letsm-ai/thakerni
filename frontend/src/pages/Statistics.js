@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { statsApi } from '../lib/api';
+import { useLanguage } from '../context/LanguageContext';
 import { 
   ChartBar, 
   CheckCircle, 
