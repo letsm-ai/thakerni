@@ -163,6 +163,12 @@ export const adminApi = {
   getSystemHealth: () => api.get('/admin/system/health'),
   getAuditLogs: (params) => api.get('/admin/audit-logs', { params }),
   exportAuditLogs: (params) => api.get('/admin/audit-logs/export', { params, responseType: 'blob' }),
+  // WhatsApp Cloud API admin
+  waCloudStatus: () => api.get('/whatsapp/cloud/status'),
+  waCloudGetSettings: () => api.get('/whatsapp/cloud/settings'),
+  waCloudUpdateSettings: (payload) => api.put('/whatsapp/cloud/settings', payload),
+  waCloudListMessages: (limit = 50) => api.get('/whatsapp/cloud/messages', { params: { limit } }),
+  waCloudSendTest: (to, body) => api.post('/whatsapp/cloud/send', { to, body }),
   getRoles: () => api.get('/admin/roles'),
   getUsage: () => api.get('/admin/usage'),
 };

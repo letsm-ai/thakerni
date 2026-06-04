@@ -122,8 +122,33 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks):
     return {"success": True}
 
 
+async def _generate_ai_reply(text_body: str, from_number: str) -> str:
+    """Generate AI response using the same LLM that powers the web chat."""
+    try:
+        from database import EMERGENT_LLM_KEY
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        SYSTEM = (
+            "You are Let's M AI, a helpful professional assistant replying over WhatsApp. "
+            "Keep responses concise (under 600 characters). Reply in the same language as the user. "
+            "If the user writes Arabic, reply in Arabic. If English, reply in English."
+        )
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"whatsapp_{from_number}",
+            system_message=SYSTEM,
+        )
+        chat.with_model("openai", "gpt-4o-mini")
+        return await chat.send_message(UserMessage(text=text_body))
+    except Exception as e:
+        logger.error(f"WhatsApp AI reply generation failed: {e}")
+        return (
+            "أهلاً! استلمنا رسالتك وسنرد عليك قريباً.\n"
+            "Hi! We've received your message and will respond soon."
+        )
+
+
 async def _handle_incoming_messages(messages: list, metadata: dict):
-    """Persist incoming message and reply via Cloud API (text only for v1)."""
+    """Persist incoming message and reply via Cloud API using AI."""
     phone_number_id = metadata.get("phone_number_id") or _env_phone_number_id()
     for msg in messages:
         from_number = msg.get("from")
@@ -144,16 +169,25 @@ async def _handle_incoming_messages(messages: list, metadata: dict):
             "received_at": datetime.now(timezone.utc).isoformat(),
         })
 
-        # Auto-reply (only text for now) — wire to AI later
-        if msg_type == "text" and text_body and phone_number_id:
-            reply = (
-                "أهلاً! استلمنا رسالتك. سيتم الرد عليك من فريق Let's M AI قريباً.\n\n"
-                "Hi! We've received your message. Our team will respond shortly."
-            )
+        # Check global on/off toggle (admin can disable auto-reply)
+        settings = await db.whatsapp_cloud_settings.find_one({"_id": "default"}, {"_id": 0}) or {}
+        auto_reply_enabled = settings.get("auto_reply_enabled", True)
+
+        if msg_type == "text" and text_body and phone_number_id and auto_reply_enabled:
+            ai_reply = await _generate_ai_reply(text_body, from_number)
             try:
-                await send_text_message(phone_number_id, from_number, reply)
+                sent_id = await send_text_message(phone_number_id, from_number, ai_reply)
+                await db.whatsapp_cloud_messages.insert_one({
+                    "direction": "outbound",
+                    "to": from_number,
+                    "message_id": sent_id,
+                    "type": "text",
+                    "body": ai_reply,
+                    "in_reply_to": msg_id,
+                    "sent_at": datetime.now(timezone.utc).isoformat(),
+                })
             except Exception as e:
-                logger.error(f"Failed to send Cloud API reply: {e}")
+                logger.error(f"Failed to send Cloud API AI reply: {e}")
 
 
 async def _handle_status_updates(statuses: list):
@@ -234,4 +268,65 @@ async def admin_send_test(req: SendMessageRequest, user: dict = Depends(get_curr
     if not pnid:
         raise HTTPException(status_code=400, detail="META_PHONE_NUMBER_ID not configured")
     msg_id = await send_text_message(pnid, req.to, req.body)
+    await db.whatsapp_cloud_messages.insert_one({
+        "direction": "outbound",
+        "to": req.to,
+        "message_id": msg_id,
+        "type": "text",
+        "body": req.body,
+        "sent_via": "admin_test",
+        "sent_at": datetime.now(timezone.utc).isoformat(),
+    })
     return {"sent": True, "message_id": msg_id}
+
+
+# ── Settings: auto-reply on/off ──
+class SettingsOut(BaseModel):
+    auto_reply_enabled: bool
+
+
+class SettingsIn(BaseModel):
+    auto_reply_enabled: bool
+
+
+@whatsapp_cloud_router.get("/settings", response_model=SettingsOut)
+async def get_settings(user: dict = Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    doc = await db.whatsapp_cloud_settings.find_one({"_id": "default"}, {"_id": 0}) or {}
+    return SettingsOut(auto_reply_enabled=doc.get("auto_reply_enabled", True))
+
+
+@whatsapp_cloud_router.put("/settings", response_model=SettingsOut)
+async def update_settings(req: SettingsIn, user: dict = Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    await db.whatsapp_cloud_settings.update_one(
+        {"_id": "default"},
+        {"$set": {"auto_reply_enabled": req.auto_reply_enabled,
+                  "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True,
+    )
+    return SettingsOut(auto_reply_enabled=req.auto_reply_enabled)
+
+
+# ── Recent messages (admin inbox) ──
+@whatsapp_cloud_router.get("/messages")
+async def list_messages(
+    limit: int = 50,
+    user: dict = Depends(get_current_user),
+):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    limit = max(1, min(limit, 200))
+    msgs = await db.whatsapp_cloud_messages.find(
+        {}, {"_id": 0}
+    ).sort("received_at", -1).limit(limit).to_list(limit)
+    # Aggregate quick stats
+    total = await db.whatsapp_cloud_messages.count_documents({})
+    inbound = await db.whatsapp_cloud_messages.count_documents({"direction": "inbound"})
+    outbound = await db.whatsapp_cloud_messages.count_documents({"direction": "outbound"})
+    return {
+        "messages": msgs,
+        "stats": {"total": total, "inbound": inbound, "outbound": outbound},
+    }

@@ -1,11 +1,11 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { ChartBar, Users, CreditCard, Activity, Shield, FileText, ArrowLeft, ArrowRight, Gauge } from 'lucide-react';
+import { ChartBar, Users, CreditCard, Activity, Shield, FileText, ArrowLeft, ArrowRight, Gauge, MessageSquare } from 'lucide-react';
 
 const ROLE_PERMISSIONS = {
-  admin: new Set(["users", "subscriptions", "billing", "analytics", "system", "roles", "audit", "announcements"]),
-  developer: new Set(["users", "analytics", "system", "audit"]),
+  admin: new Set(["users", "subscriptions", "billing", "analytics", "system", "roles", "audit", "announcements", "whatsapp"]),
+  developer: new Set(["users", "analytics", "system", "audit", "whatsapp"]),
   operations: new Set(["users", "subscriptions", "billing", "analytics", "announcements"]),
   viewer: new Set(["users", "subscriptions", "analytics"]),
 };
@@ -23,6 +23,7 @@ export default function AdminLayout() {
     { to: '/admin/analytics', label: isRTL ? 'التحليلات' : 'Analytics', icon: Activity, perm: 'analytics' },
     { to: '/admin/billing', label: isRTL ? 'الفواتير' : 'Billing', icon: CreditCard, perm: 'billing' },
     { to: '/admin/system', label: isRTL ? 'النظام' : 'System', icon: Shield, perm: 'system' },
+    { to: '/admin/whatsapp', label: isRTL ? 'واتساب' : 'WhatsApp', icon: MessageSquare, perm: 'whatsapp' },
     { to: '/admin/audit', label: isRTL ? 'سجل المراجعة' : 'Audit Logs', icon: FileText, perm: 'audit' },
     { to: '/admin/usage', label: isRTL ? 'استهلاك التوكنات' : 'Token Usage', icon: Gauge, perm: 'analytics' },
   ];
