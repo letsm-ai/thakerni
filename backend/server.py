@@ -2,12 +2,27 @@
 Letsm AI — Main Application Entry Point
 Thin orchestrator: imports route modules and assembles the FastAPI app.
 """
+import os
+import logging
+
+# ── Initialize Sentry FIRST (before importing FastAPI) for full coverage ──
+_SENTRY_DSN = os.environ.get("SENTRY_DSN")
+if _SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.starlette import StarletteIntegration
+    sentry_sdk.init(
+        dsn=_SENTRY_DSN,
+        environment=os.environ.get("SENTRY_ENVIRONMENT", "production"),
+        integrations=[StarletteIntegration(), FastApiIntegration()],
+        send_default_pii=False,
+        traces_sample_rate=0.0,  # error monitoring only — no performance traces
+    )
+
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-import os
-import logging
 import resend
 
 from database import db, client, RESEND_API_KEY, SENDER_EMAIL
@@ -18,6 +33,8 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+if _SENTRY_DSN:
+    logger.info("Sentry error monitoring enabled")
 
 # Initialize Resend
 if RESEND_API_KEY:

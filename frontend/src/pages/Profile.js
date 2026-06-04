@@ -2,8 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { userApi, subscriptionApi, exportApi, emailApi, thawaniApi } from '../lib/api';
-import { User, EnvelopeSimple, Calendar, PencilSimple, Check, CrownSimple, Lightning, DownloadSimple, BellRinging, Export, Envelope, Eye } from '@phosphor-icons/react';
+import { User, EnvelopeSimple, Calendar, PencilSimple, Check, CrownSimple, Lightning } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import NotificationsSection from '../components/profile/NotificationsSection';
+import EmailDigestSection from '../components/profile/EmailDigestSection';
+import EmailConfigSection from '../components/profile/EmailConfigSection';
+import DataExportSection from '../components/profile/DataExportSection';
+import AccountInfoSection from '../components/profile/AccountInfoSection';
 
 const Profile = () => {
   const { user, setUserData } = useAuth();
@@ -355,214 +360,45 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Notifications Section */}
-      <div className="bg-white border border-slate-200 rounded-lg p-6 mb-6" data-testid="notifications-section">
-        <div className="flex items-center gap-3 mb-4">
-          <BellRinging size={22} className="text-blue-600" weight="fill" />
-          <h3 className="font-semibold text-slate-900">Browser Notifications</h3>
-        </div>
-        <p className="text-sm text-slate-500 mb-4">
-          Get browser alerts when your reminders are due and tasks need attention.
-        </p>
-        <div className="flex items-center gap-3">
-          {notifPermission === 'granted' ? (
-            <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
-              <Check size={16} className="text-green-600" weight="bold" />
-              <span className="text-sm font-medium text-green-700">Notifications enabled</span>
-            </div>
-          ) : notifPermission === 'denied' ? (
-            <div className="text-sm text-slate-500">
-              Notifications are blocked. Please enable them in your browser settings.
-            </div>
-          ) : (
-            <button onClick={requestNotificationPermission}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
-              data-testid="enable-notifications-button">
-              <BellRinging size={16} weight="fill" />
-              Enable Notifications
-            </button>
-          )}
-        </div>
-      </div>
+      {/* Notifications */}
+      <NotificationsSection
+        notifPermission={notifPermission}
+        onEnable={requestNotificationPermission}
+      />
 
-      {/* Email Digest Section */}
-      <div className="bg-white border border-slate-200 rounded-lg p-6 mb-6" data-testid="email-digest-section">
-        <div className="flex items-center gap-3 mb-4">
-          <Envelope size={22} className="text-violet-600" weight="fill" />
-          <h3 className="font-semibold text-slate-900">Weekly Email Digest</h3>
-        </div>
-        <p className="text-sm text-slate-500 mb-4">
-          Receive a weekly summary of your productivity stats, completed tasks, and upcoming items every Sunday.
-        </p>
-
-        {digestSchedule?.next_run && (
-          <div className="flex items-center gap-2 p-3 bg-violet-50 border border-violet-200 rounded-lg mb-4 text-sm" data-testid="digest-schedule-info">
-            <Calendar size={16} className="text-violet-600 flex-shrink-0" />
-            <span className="text-violet-800">
-              Next automated digest: <strong>{new Date(digestSchedule.next_run).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</strong>
-            </span>
-          </div>
-        )}
-
-        <div className="space-y-3 mb-4">
-          <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer">
-            <div>
-              <span className="text-sm font-medium text-slate-700">Weekly Digest</span>
-              <p className="text-xs text-slate-500">Sunday morning summary email</p>
-            </div>
-            <button
-              onClick={() => toggleEmailPref('weekly_digest')}
-              className={`relative w-11 h-6 rounded-full transition-colors ${emailPrefs.weekly_digest ? 'bg-violet-600' : 'bg-slate-300'}`}
-              data-testid="toggle-weekly-digest"
-            >
-              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${emailPrefs.weekly_digest ? 'left-[22px]' : 'left-0.5'}`}></span>
-            </button>
-          </label>
-          <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer">
-            <div>
-              <span className="text-sm font-medium text-slate-700">Reminder Alerts</span>
-              <p className="text-xs text-slate-500">Email when reminders are due</p>
-            </div>
-            <button
-              onClick={() => toggleEmailPref('reminder_alerts')}
-              className={`relative w-11 h-6 rounded-full transition-colors ${emailPrefs.reminder_alerts ? 'bg-violet-600' : 'bg-slate-300'}`}
-              data-testid="toggle-reminder-alerts"
-            >
-              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${emailPrefs.reminder_alerts ? 'left-[22px]' : 'left-0.5'}`}></span>
-            </button>
-          </label>
-        </div>
-
-        <div className="flex gap-3">
-          <button onClick={handlePreviewDigest}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200 transition-colors"
-            data-testid="preview-digest-button">
-            <Eye size={16} />Preview Digest
-          </button>
-          <button onClick={handleSendDigest} disabled={sendingDigest}
-            className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white text-sm font-semibold rounded-lg hover:bg-violet-700 transition-colors disabled:opacity-50"
-            data-testid="send-digest-button">
-            {sendingDigest ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <Envelope size={16} weight="fill" />
-            )}
-            Send Now
-          </button>
-        </div>
-
-        {/* Digest Preview */}
-        {previewHtml && (
-          <div className="mt-4 border border-slate-200 rounded-lg overflow-hidden" data-testid="digest-preview">
-            <div className="bg-slate-50 px-4 py-2 flex items-center justify-between border-b">
-              <span className="text-xs font-medium text-slate-500">Digest Preview</span>
-              <button onClick={() => setPreviewHtml(null)} className="text-xs text-slate-400 hover:text-slate-600">Close</button>
-            </div>
-            <iframe
-              srcDoc={previewHtml}
-              title="Digest Preview"
-              className="w-full h-[500px] border-0"
-              sandbox="allow-same-origin"
-            />
-          </div>
-        )}
-      </div>
+      {/* Email Digest */}
+      <EmailDigestSection
+        digestSchedule={digestSchedule}
+        emailPrefs={emailPrefs}
+        sendingDigest={sendingDigest}
+        previewHtml={previewHtml}
+        onTogglePref={toggleEmailPref}
+        onPreview={handlePreviewDigest}
+        onSend={handleSendDigest}
+        onClosePreview={() => setPreviewHtml(null)}
+      />
 
       {/* Email Configuration (Admin only) */}
-      {emailConfig !== null && (
-        <div className="bg-white border border-slate-200 rounded-lg p-6 mb-6" data-testid="email-config-section">
-          <div className="flex items-center gap-3 mb-4">
-            <EnvelopeSimple size={22} className="text-blue-600" weight="fill" />
-            <h3 className="font-semibold text-slate-900">Email Service Configuration</h3>
-            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${emailConfig.configured ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
-              {emailConfig.configured ? 'Connected' : 'Not Configured'}
-            </span>
-          </div>
-          <p className="text-sm text-slate-500 mb-4">
-            Configure your Resend API key to enable email delivery (weekly digests, notifications). Get your API key at <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-violet-600 underline">resend.com</a>.
-          </p>
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1 block">Resend API Key</label>
-              <input type="password" value={resendKey} onChange={e => setResendKey(e.target.value)}
-                placeholder={emailConfig.configured ? '••••••••••• (configured)' : 're_xxxxxxxxxx'}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
-                data-testid="resend-key-input" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1 block">Sender Email</label>
-              <input type="email" value={senderEmail} onChange={e => setSenderEmail(e.target.value)}
-                placeholder="onboarding@resend.dev"
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
-                data-testid="sender-email-input" />
-            </div>
-            <button onClick={handleSaveEmailConfig} disabled={savingConfig || (!resendKey && !senderEmail)}
-              className="px-5 py-2.5 bg-violet-600 text-white text-sm font-medium rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors"
-              data-testid="save-email-config-btn">
-              {savingConfig ? 'Saving...' : 'Save & Test'}
-            </button>
-          </div>
-        </div>
-      )}
+      <EmailConfigSection
+        emailConfig={emailConfig}
+        resendKey={resendKey}
+        senderEmail={senderEmail}
+        savingConfig={savingConfig}
+        onResendKeyChange={setResendKey}
+        onSenderEmailChange={setSenderEmail}
+        onSave={handleSaveEmailConfig}
+      />
 
-      {/* Data Export Section */}
-      <div className="bg-white border border-slate-200 rounded-lg p-6 mb-6" data-testid="export-section">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Export size={22} className="text-emerald-600" weight="fill" />
-            <h3 className="font-semibold text-slate-900">Export Your Data</h3>
-          </div>
-          <div className="flex bg-slate-100 rounded-lg p-0.5" data-testid="export-format-toggle">
-            <button onClick={() => setExportFormat('json')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${exportFormat === 'json' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}
-              data-testid="export-format-json">JSON</button>
-            <button onClick={() => setExportFormat('csv')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${exportFormat === 'csv' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}
-              data-testid="export-format-csv">CSV</button>
-          </div>
-        </div>
-        <p className="text-sm text-slate-500 mb-4">
-          Download your data as {exportFormat.toUpperCase()} files. You own your data.
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { key: 'tasks', label: 'Tasks' },
-            { key: 'reminders', label: 'Reminders' },
-            { key: 'conversations', label: 'Conversations' },
-            { key: 'all', label: 'All Data' }
-          ].map(item => (
-            <button key={item.key} onClick={() => handleExport(item.key)} disabled={exporting === item.key}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50 text-sm font-medium text-slate-700"
-              data-testid={`export-${item.key}-button`}>
-              {exporting === item.key ? (
-                <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <DownloadSimple size={16} />
-              )}
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Data Export */}
+      <DataExportSection
+        exportFormat={exportFormat}
+        exporting={exporting}
+        onFormatChange={setExportFormat}
+        onExport={handleExport}
+      />
 
       {/* Account Info */}
-      <div className="bg-white border border-slate-200 rounded-lg p-6">
-        <h3 className="font-semibold text-slate-900 mb-4">Account Information</h3>
-        <div className="space-y-4">
-          <div>
-            <label className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">User ID</label>
-            <p className="text-sm text-slate-700 mt-1 font-mono">{user?.user_id}</p>
-          </div>
-          <div>
-            <label className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Email Address</label>
-            <p className="text-sm text-slate-700 mt-1">{user?.email}</p>
-          </div>
-          <div>
-            <label className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Account Created</label>
-            <p className="text-sm text-slate-700 mt-1">{formatDate(user?.created_at)}</p>
-          </div>
-        </div>
-      </div>
+      <AccountInfoSection user={user} formatDate={formatDate} />
     </div>
   );
 };
