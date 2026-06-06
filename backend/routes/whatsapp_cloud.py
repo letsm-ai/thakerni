@@ -12,8 +12,9 @@ import hmac
 import json
 import logging
 import os
-from datetime import datetime, timezone
-from typing import Optional
+import re
+from datetime import datetime, timedelta, timezone
+from typing import List, Optional
 
 import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
@@ -122,18 +123,39 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks):
     return {"success": True}
 
 
-async def _generate_ai_reply(text_body: str, from_number: str) -> str:
-    """Generate AI response. Tries OpenAI SDK first (works with OPENAI_API_KEY),
-    falls back to emergentintegrations if direct call fails."""
-    SYSTEM = (
-        "You are Let's M AI, a helpful professional WhatsApp assistant. "
-        "Keep responses concise (under 600 characters). "
-        "Reply in the EXACT SAME language the user wrote in: "
-        "Arabic for Arabic, English for English, mixed for mixed. "
-        "Be friendly, helpful, and direct."
-    )
+async def _generate_ai_reply(text_body: str, from_number: str, *, linked_user: Optional[dict] = None, history: Optional[list] = None) -> str:
+    """Generate AI response. Tries OpenAI SDK first, falls back to emergentintegrations.
 
-    # ── Path 1: Direct OpenAI SDK (preferred — uses OPENAI_API_KEY env var) ──
+    If `linked_user` is provided, personalises the reply with the user's name.
+    If `history` is provided (list of {role, content}), includes it as context for memory.
+    """
+    user_name = (linked_user or {}).get("name") or (linked_user or {}).get("email", "").split("@")[0]
+    is_anonymous = linked_user is None
+
+    if is_anonymous:
+        SYSTEM = (
+            "You are Let's M AI, a helpful professional WhatsApp assistant. "
+            "Keep responses concise (under 500 characters). "
+            "Reply in the EXACT SAME language the user wrote in (Arabic for Arabic, English for English). "
+            "Be friendly, helpful, and direct. "
+            "IMPORTANT: This user is anonymous (not linked to an account)."
+        )
+    else:
+        SYSTEM = (
+            f"You are Let's M AI, a helpful professional WhatsApp assistant. "
+            f"You are chatting with {user_name}, an authenticated user. "
+            f"Keep responses concise (under 600 characters). "
+            f"Reply in the EXACT SAME language the user wrote in. "
+            f"Be friendly, helpful, and personal. Remember prior messages in this conversation."
+        )
+
+    messages_for_llm: List[dict] = [{"role": "system", "content": SYSTEM}]
+    if history:
+        # Cap history to last 10 turns to control tokens
+        messages_for_llm.extend(history[-10:])
+    messages_for_llm.append({"role": "user", "content": text_body})
+
+    # ── Path 1: Direct OpenAI SDK ──
     openai_key = os.environ.get("OPENAI_API_KEY")
     if openai_key:
         try:
@@ -141,36 +163,26 @@ async def _generate_ai_reply(text_body: str, from_number: str) -> str:
             client = AsyncOpenAI(api_key=openai_key)
             resp = await client.chat.completions.create(
                 model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": SYSTEM},
-                    {"role": "user", "content": text_body},
-                ],
+                messages=messages_for_llm,
                 max_tokens=400,
                 temperature=0.7,
             )
             reply = (resp.choices[0].message.content or "").strip()
             if reply:
-                logger.info(f"WhatsApp AI reply (OpenAI) → {from_number}: {reply[:80]}...")
+                logger.info(f"WhatsApp AI reply (OpenAI, {'linked' if linked_user else 'anon'}) → {from_number}: {reply[:80]}...")
                 return reply
             logger.warning("OpenAI returned empty content — falling back")
         except Exception as e:
             logger.error(f"OpenAI direct call failed for {from_number}: {type(e).__name__}: {e}", exc_info=True)
-    else:
-        logger.info("OPENAI_API_KEY not set — trying EMERGENT_LLM_KEY")
 
-    # ── Path 2: emergentintegrations (uses EMERGENT_LLM_KEY) ──
+    # ── Path 2: emergentintegrations fallback ──
     try:
         from database import EMERGENT_LLM_KEY
         from emergentintegrations.llm.chat import LlmChat, UserMessage
         if not EMERGENT_LLM_KEY:
             raise RuntimeError("Neither OPENAI_API_KEY nor EMERGENT_LLM_KEY is configured")
-        # Sanitize session id (no '+' / spaces)
         sid = "wa_" + "".join(c for c in (from_number or "anon") if c.isalnum())
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=sid,
-            system_message=SYSTEM,
-        )
+        chat = LlmChat(api_key=EMERGENT_LLM_KEY, session_id=sid, system_message=SYSTEM)
         chat.with_model("openai", "gpt-4o-mini")
         reply = await chat.send_message(UserMessage(text=text_body))
         reply = (reply or "").strip()
@@ -178,26 +190,105 @@ async def _generate_ai_reply(text_body: str, from_number: str) -> str:
             logger.info(f"WhatsApp AI reply (Emergent) → {from_number}: {reply[:80]}...")
             return reply
     except Exception as e:
-        logger.error(f"WhatsApp AI reply generation FAILED (both paths) for {from_number}: {type(e).__name__}: {e}", exc_info=True)
+        logger.error(f"WhatsApp AI reply generation FAILED for {from_number}: {type(e).__name__}: {e}", exc_info=True)
 
-    # ── Last resort fallback ──
     return (
         "أهلاً! استلمنا رسالتك وسنرد عليك قريباً.\n"
         "Hi! We've received your message and will respond soon."
     )
 
 
+# ── Linking helpers ──
+LINKING_CODE_TTL_MINUTES = 15
+LINKING_CODE_PATTERN = re.compile(r"\b(LM-[A-Z0-9]{4,8})\b", re.IGNORECASE)
+
+
+def _generate_linking_code() -> str:
+    """Generates a memorable code like LM-7K9X."""
+    import secrets
+    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # Removed easily confused chars
+    return "LM-" + "".join(secrets.choice(alphabet) for _ in range(4))
+
+
+async def _try_link_with_code(text_body: str, from_number: str) -> Optional[dict]:
+    """If the message contains a valid LM-XXXX code, link the phone number to the user.
+    Returns the linked user dict on success, None otherwise."""
+    if not text_body:
+        return None
+    match = LINKING_CODE_PATTERN.search(text_body)
+    if not match:
+        return None
+
+    code = match.group(1).upper()
+    now = datetime.now(timezone.utc)
+    code_doc = await db.whatsapp_link_codes.find_one(
+        {"code": code, "used": {"$ne": True}},
+        {"_id": 0},
+    )
+    if not code_doc:
+        return None
+
+    # Check expiry
+    expires_at_str = code_doc.get("expires_at")
+    if expires_at_str:
+        try:
+            expires_at = datetime.fromisoformat(expires_at_str)
+            if expires_at < now:
+                return None
+        except Exception:
+            pass
+
+    user_id = code_doc.get("user_id")
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "user_id": 1, "name": 1, "email": 1})
+    if not user:
+        return None
+
+    # Link the phone to the user
+    await db.users.update_one(
+        {"user_id": user_id},
+        {"$set": {"whatsapp_phone": from_number, "whatsapp_linked_at": now.isoformat()}},
+    )
+    # Mark the code as used
+    await db.whatsapp_link_codes.update_one(
+        {"code": code},
+        {"$set": {"used": True, "used_at": now.isoformat(), "used_by_phone": from_number}},
+    )
+    logger.info(f"WhatsApp link success: phone {from_number} → user {user_id} via code {code}")
+    return user
+
+
+async def _get_linked_user(from_number: str) -> Optional[dict]:
+    return await db.users.find_one(
+        {"whatsapp_phone": from_number},
+        {"_id": 0, "user_id": 1, "name": 1, "email": 1},
+    )
+
+
+async def _get_recent_history(from_number: str, limit: int = 10) -> List[dict]:
+    """Returns recent message history for an LLM context window."""
+    docs = await db.whatsapp_cloud_messages.find(
+        {"$or": [{"from": from_number}, {"to": from_number}]},
+        {"_id": 0, "direction": 1, "body": 1, "received_at": 1, "sent_at": 1},
+    ).sort([("received_at", -1), ("sent_at", -1)]).limit(limit * 2).to_list(limit * 2)
+    docs.reverse()
+    out = []
+    for d in docs:
+        if not d.get("body"):
+            continue
+        role = "user" if d.get("direction") == "inbound" else "assistant"
+        out.append({"role": role, "content": d["body"]})
+    return out
+
+
 async def _handle_incoming_messages(messages: list, metadata: dict):
-    """Persist incoming message and reply via Cloud API using AI."""
+    """Persist incoming message, attempt linking, then AI reply."""
     phone_number_id = metadata.get("phone_number_id") or _env_phone_number_id()
     for msg in messages:
         from_number = msg.get("from")
         msg_id = msg.get("id")
         msg_type = msg.get("type")
         timestamp = msg.get("timestamp")
-        text_body = ""
-        if msg_type == "text":
-            text_body = msg.get("text", {}).get("body", "")
+        text_body = msg.get("text", {}).get("body", "") if msg_type == "text" else ""
 
         await db.whatsapp_cloud_messages.insert_one({
             "direction": "inbound",
@@ -209,25 +300,53 @@ async def _handle_incoming_messages(messages: list, metadata: dict):
             "received_at": datetime.now(timezone.utc).isoformat(),
         })
 
-        # Check global on/off toggle (admin can disable auto-reply)
-        settings = await db.whatsapp_cloud_settings.find_one({"_id": "default"}, {"_id": 0}) or {}
-        auto_reply_enabled = settings.get("auto_reply_enabled", True)
+        if msg_type != "text" or not text_body or not phone_number_id:
+            continue
 
-        if msg_type == "text" and text_body and phone_number_id and auto_reply_enabled:
-            ai_reply = await _generate_ai_reply(text_body, from_number)
-            try:
-                sent_id = await send_text_message(phone_number_id, from_number, ai_reply)
-                await db.whatsapp_cloud_messages.insert_one({
-                    "direction": "outbound",
-                    "to": from_number,
-                    "message_id": sent_id,
-                    "type": "text",
-                    "body": ai_reply,
-                    "in_reply_to": msg_id,
-                    "sent_at": datetime.now(timezone.utc).isoformat(),
-                })
-            except Exception as e:
-                logger.error(f"Failed to send Cloud API AI reply: {e}")
+        settings = await db.whatsapp_cloud_settings.find_one({"_id": "default"}, {"_id": 0}) or {}
+        if not settings.get("auto_reply_enabled", True):
+            continue
+
+        # 1) Try linking via code
+        newly_linked = await _try_link_with_code(text_body, from_number)
+        if newly_linked:
+            name = newly_linked.get("name") or newly_linked.get("email", "").split("@")[0]
+            reply = (
+                f"✅ تم ربط رقمك بنجاح، {name}!\n"
+                f"يمكنك الآن مراسلتي بحرية وسأتذكر سياق محادثاتنا.\n\n"
+                f"✅ Successfully linked, {name}!\n"
+                f"You can now chat freely and I'll remember our conversation context."
+            )
+        else:
+            # 2) Reply with AI (linked or anonymous)
+            linked_user = await _get_linked_user(from_number)
+            history = await _get_recent_history(from_number) if linked_user else None
+            ai_reply = await _generate_ai_reply(
+                text_body, from_number, linked_user=linked_user, history=history
+            )
+            if not linked_user:
+                cta = (
+                    "\n\n💡 للاستفادة الكاملة وحفظ محادثاتك، سجّل في "
+                    "https://letsm.ai وأرسل لي الكود من حسابك."
+                )
+                # Avoid duplicating the CTA if AI already mentioned letsm.ai
+                if "letsm.ai" not in ai_reply.lower():
+                    ai_reply = ai_reply + cta
+            reply = ai_reply
+
+        try:
+            sent_id = await send_text_message(phone_number_id, from_number, reply)
+            await db.whatsapp_cloud_messages.insert_one({
+                "direction": "outbound",
+                "to": from_number,
+                "message_id": sent_id,
+                "type": "text",
+                "body": reply,
+                "in_reply_to": msg_id,
+                "sent_at": datetime.now(timezone.utc).isoformat(),
+            })
+        except Exception as e:
+            logger.error(f"Failed to send Cloud API reply to {from_number}: {e}")
 
 
 async def _handle_status_updates(statuses: list):
@@ -370,3 +489,81 @@ async def list_messages(
         "messages": msgs,
         "stats": {"total": total, "inbound": inbound, "outbound": outbound},
     }
+
+
+# ══════════════════════════════════════════════════════════════════
+#  USER-FACING LINKING (for the dashboard "Link WhatsApp" feature)
+# ══════════════════════════════════════════════════════════════════
+
+class LinkStatusOut(BaseModel):
+    linked: bool
+    phone: Optional[str] = None
+    linked_at: Optional[str] = None
+    business_number: Optional[str] = None
+
+
+class LinkCodeOut(BaseModel):
+    code: str
+    expires_at: str
+    expires_in_seconds: int
+    business_number: Optional[str] = None
+    instructions_en: str
+    instructions_ar: str
+
+
+@whatsapp_cloud_router.get("/link/status", response_model=LinkStatusOut)
+async def get_link_status(user: dict = Depends(get_current_user)):
+    """Returns whether the current user has a linked WhatsApp phone."""
+    me = await db.users.find_one(
+        {"user_id": user["user_id"]},
+        {"_id": 0, "whatsapp_phone": 1, "whatsapp_linked_at": 1},
+    ) or {}
+    biz = os.environ.get("META_BUSINESS_DISPLAY_NUMBER") or "+968 7154 7480"
+    return LinkStatusOut(
+        linked=bool(me.get("whatsapp_phone")),
+        phone=me.get("whatsapp_phone"),
+        linked_at=me.get("whatsapp_linked_at"),
+        business_number=biz,
+    )
+
+
+@whatsapp_cloud_router.post("/link/code", response_model=LinkCodeOut)
+async def generate_link_code(user: dict = Depends(get_current_user)):
+    """Generates a fresh linking code valid for 15 minutes. Replaces any prior unused code."""
+    code = _generate_linking_code()
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(minutes=LINKING_CODE_TTL_MINUTES)
+
+    # Invalidate older unused codes for the same user
+    await db.whatsapp_link_codes.update_many(
+        {"user_id": user["user_id"], "used": {"$ne": True}},
+        {"$set": {"used": True, "used_at": now.isoformat(), "expired": True}},
+    )
+    await db.whatsapp_link_codes.insert_one({
+        "code": code,
+        "user_id": user["user_id"],
+        "user_email": user.get("email"),
+        "created_at": now.isoformat(),
+        "expires_at": expires_at.isoformat(),
+        "used": False,
+    })
+
+    biz = os.environ.get("META_BUSINESS_DISPLAY_NUMBER") or "+968 7154 7480"
+    return LinkCodeOut(
+        code=code,
+        expires_at=expires_at.isoformat(),
+        expires_in_seconds=LINKING_CODE_TTL_MINUTES * 60,
+        business_number=biz,
+        instructions_en=f"Open WhatsApp, send this exact code to {biz}: {code}",
+        instructions_ar=f"افتح واتساب وأرسل هذا الكود بالضبط إلى {biz}: {code}",
+    )
+
+
+@whatsapp_cloud_router.delete("/link")
+async def unlink_whatsapp(user: dict = Depends(get_current_user)):
+    """Removes the link between the user's account and their WhatsApp number."""
+    await db.users.update_one(
+        {"user_id": user["user_id"]},
+        {"$unset": {"whatsapp_phone": "", "whatsapp_linked_at": ""}},
+    )
+    return {"success": True}

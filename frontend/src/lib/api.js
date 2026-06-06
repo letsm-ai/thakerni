@@ -199,4 +199,11 @@ export const teamApi = {
   getCalendar: (params) => api.get('/teams/calendar', { params }),
 };
 
+// User-facing WhatsApp linking (Dashboard)
+export const whatsappLinkApi = {
+  getStatus: () => api.get('/whatsapp/cloud/link/status'),
+  generateCode: () => api.post('/whatsapp/cloud/link/code'),
+  unlink: () => api.delete('/whatsapp/cloud/link'),
+};
+
 export default api;

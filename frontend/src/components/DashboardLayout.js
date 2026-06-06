@@ -33,7 +33,7 @@ const getNavItems = (t) => [
   { path: '/dashboard/team', icon: UsersThree, label: t('team') },
   { path: '/dashboard/statistics', icon: ChartBar, label: t('statistics') },
   { path: '/dashboard/image-analysis', icon: ImageSquare, label: t('imageAnalysis') },
-  { path: '/dashboard/whatsapp', icon: WhatsappLogo, label: t('whatsApp') },
+  { path: '/dashboard/whatsapp-link', icon: WhatsappLogo, label: t('whatsApp') },
   { path: '/dashboard/profile', icon: User, label: t('profile') },
 ];
 
