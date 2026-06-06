@@ -71,16 +71,8 @@ export const googleCalendarApi = {
   syncPull: () => api.post('/calendar/google/sync/pull'),
 };
 
-// WhatsApp API
-export const whatsappApi = {
-  getStatus: () => api.get('/whatsapp/status'),
-  getQR: () => api.get('/whatsapp/qr'),
-  connect: () => api.post('/whatsapp/connect'),
-  disconnect: () => api.post('/whatsapp/disconnect'),
-  getLinkStatus: () => api.get('/whatsapp/link-status'),
-  generateLinkCode: () => api.post('/whatsapp/generate-link-code'),
-  unlinkWhatsApp: () => api.post('/whatsapp/unlink'),
-};
+// WhatsApp API — removed (Baileys deprecated). Use `whatsappLinkApi` below
+// for Cloud-API-based linking.
 
 // Notifications API
 export const notificationsApi = {

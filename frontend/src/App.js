@@ -17,7 +17,6 @@ import Chat from "./pages/Chat";
 import Tasks from "./pages/Tasks";
 import Reminders from "./pages/Reminders";
 import CalendarPage from "./pages/CalendarPage";
-import WhatsApp from "./pages/WhatsApp";
 import Profile from "./pages/Profile";
 import WhatsAppLink from "./pages/WhatsAppLink";
 import Statistics from "./pages/Statistics";
@@ -107,16 +106,6 @@ const AppRouter = () => {
           <ProtectedRoute>
             <DashboardLayout>
               <CalendarPage />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/dashboard/whatsapp"
-        element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <WhatsApp />
             </DashboardLayout>
           </ProtectedRoute>
         }
