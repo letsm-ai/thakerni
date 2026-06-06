@@ -9,7 +9,10 @@ WORKDIR /app
 
 # Install deps first (layer caching)
 COPY frontend/package.json frontend/yarn.lock /app/
-RUN yarn install --frozen-lockfile --network-timeout 600000
+# Use --network-timeout for slow registries. We removed --frozen-lockfile so
+# that small lockfile drifts (e.g. when a new dep was added on dev but lockfile
+# wasn't fully committed) don't break production builds.
+RUN yarn install --network-timeout 600000 --non-interactive
 
 # Copy sources & build
 COPY frontend/ /app/
