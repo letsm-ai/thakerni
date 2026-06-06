@@ -123,28 +123,68 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks):
 
 
 async def _generate_ai_reply(text_body: str, from_number: str) -> str:
-    """Generate AI response using the same LLM that powers the web chat."""
+    """Generate AI response. Tries OpenAI SDK first (works with OPENAI_API_KEY),
+    falls back to emergentintegrations if direct call fails."""
+    SYSTEM = (
+        "You are Let's M AI, a helpful professional WhatsApp assistant. "
+        "Keep responses concise (under 600 characters). "
+        "Reply in the EXACT SAME language the user wrote in: "
+        "Arabic for Arabic, English for English, mixed for mixed. "
+        "Be friendly, helpful, and direct."
+    )
+
+    # ── Path 1: Direct OpenAI SDK (preferred — uses OPENAI_API_KEY env var) ──
+    openai_key = os.environ.get("OPENAI_API_KEY")
+    if openai_key:
+        try:
+            from openai import AsyncOpenAI
+            client = AsyncOpenAI(api_key=openai_key)
+            resp = await client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": SYSTEM},
+                    {"role": "user", "content": text_body},
+                ],
+                max_tokens=400,
+                temperature=0.7,
+            )
+            reply = (resp.choices[0].message.content or "").strip()
+            if reply:
+                logger.info(f"WhatsApp AI reply (OpenAI) → {from_number}: {reply[:80]}...")
+                return reply
+            logger.warning("OpenAI returned empty content — falling back")
+        except Exception as e:
+            logger.error(f"OpenAI direct call failed for {from_number}: {type(e).__name__}: {e}", exc_info=True)
+    else:
+        logger.info("OPENAI_API_KEY not set — trying EMERGENT_LLM_KEY")
+
+    # ── Path 2: emergentintegrations (uses EMERGENT_LLM_KEY) ──
     try:
         from database import EMERGENT_LLM_KEY
         from emergentintegrations.llm.chat import LlmChat, UserMessage
-        SYSTEM = (
-            "You are Let's M AI, a helpful professional assistant replying over WhatsApp. "
-            "Keep responses concise (under 600 characters). Reply in the same language as the user. "
-            "If the user writes Arabic, reply in Arabic. If English, reply in English."
-        )
+        if not EMERGENT_LLM_KEY:
+            raise RuntimeError("Neither OPENAI_API_KEY nor EMERGENT_LLM_KEY is configured")
+        # Sanitize session id (no '+' / spaces)
+        sid = "wa_" + "".join(c for c in (from_number or "anon") if c.isalnum())
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
-            session_id=f"whatsapp_{from_number}",
+            session_id=sid,
             system_message=SYSTEM,
         )
         chat.with_model("openai", "gpt-4o-mini")
-        return await chat.send_message(UserMessage(text=text_body))
+        reply = await chat.send_message(UserMessage(text=text_body))
+        reply = (reply or "").strip()
+        if reply:
+            logger.info(f"WhatsApp AI reply (Emergent) → {from_number}: {reply[:80]}...")
+            return reply
     except Exception as e:
-        logger.error(f"WhatsApp AI reply generation failed: {e}")
-        return (
-            "أهلاً! استلمنا رسالتك وسنرد عليك قريباً.\n"
-            "Hi! We've received your message and will respond soon."
-        )
+        logger.error(f"WhatsApp AI reply generation FAILED (both paths) for {from_number}: {type(e).__name__}: {e}", exc_info=True)
+
+    # ── Last resort fallback ──
+    return (
+        "أهلاً! استلمنا رسالتك وسنرد عليك قريباً.\n"
+        "Hi! We've received your message and will respond soon."
+    )
 
 
 async def _handle_incoming_messages(messages: list, metadata: dict):
