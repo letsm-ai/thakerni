@@ -72,19 +72,6 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,scope=frontend,mode=max
 
-      # --- WhatsApp ---
-      - name: Build & push whatsapp
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: Dockerfile.whatsapp
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-whatsapp:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-whatsapp:${{ steps.meta.outputs.tag }}
-          cache-from: type=gha,scope=whatsapp
-          cache-to: type=gha,scope=whatsapp,mode=max
-
   # ─────────────── 2. Deploy via VPS self-pull (no SSH from CI) ───────────────
   # We avoid SSH/SCP from GitHub Actions entirely because Hostinger's fail2ban
   # repeatedly bans the dynamic Azure runner IPs, causing i/o timeouts.

@@ -1,6 +1,6 @@
 # ============================================================
 # Letsm AI - Production Stack
-# Stack: Nginx + React + FastAPI + MongoDB + Redis + WhatsApp
+# Stack: Nginx + React + FastAPI + MongoDB + Redis
 # Designed for: Ubuntu 24.04 VPS, 16GB RAM, 4 vCPU
 # ============================================================
 
@@ -14,8 +14,6 @@ volumes:
   mongo_config:
     driver: local
   redis_data:
-    driver: local
-  wa_auth:
     driver: local
   certbot_www:
     driver: local
@@ -104,7 +102,6 @@ services:
       META_PHONE_NUMBER_ID: ${META_PHONE_NUMBER_ID}
       META_WHATSAPP_BUSINESS_ACCOUNT_ID: ${META_WHATSAPP_BUSINESS_ACCOUNT_ID}
       CORS_ORIGINS: ${CORS_ORIGINS}
-      WHATSAPP_SERVICE_URL: "http://whatsapp:3001"
       TZ: ${TZ:-Asia/Muscat}
     networks:
       - letsm_net
@@ -124,25 +121,6 @@ services:
       - letsm_net
     expose:
       - "80"
-    
-  whatsapp:
-    build:
-      context: .
-      dockerfile: Dockerfile.whatsapp
-    container_name: letsm_whatsapp
-    restart: unless-stopped
-    depends_on:
-      - backend
-    environment:
-      PORT: 3001
-      BACKEND_URL: "http://backend:8001"
-      TZ: ${TZ:-Asia/Muscat}
-    volumes:
-      - wa_auth:/app/auth_info
-    networks:
-      - letsm_net
-    expose:
-      - "3001"
 
   nginx:
     image: nginx:1.27-alpine

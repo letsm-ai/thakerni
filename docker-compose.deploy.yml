@@ -11,6 +11,3 @@ services:
 
   frontend:
     image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX}-frontend:${IMAGE_TAG:-latest}
-
-  whatsapp:
-    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX}-whatsapp:${IMAGE_TAG:-latest}
